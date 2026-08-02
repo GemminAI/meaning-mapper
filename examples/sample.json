@@ -1,8 +1,7 @@
 {
-  "event": "boot",
-  "device": "sensor-1",
-  "timestamp": "2026-08-02T00:00:00+00:00",
-  "payload": {
-    "text": "system online"
-  }
+  "acceleration": [0.01, -0.05, 9.81],
+  "voltage": 12.45,
+  "state_hash": "0xDEADBEEF",
+  "state": "Normal Operating State",
+  "semantic_class": "system_stability_basin"
 }

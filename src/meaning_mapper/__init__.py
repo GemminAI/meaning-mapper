@@ -1,20 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Gemmina Intelligence LLC.
 
-"""Meaning Mapper — reference service for observation → HEXT meaning projection."""
+"""Meaning Mapper — SensOS Open Standards Reference Service (RFC-SA001–SA005)."""
 
 from __future__ import annotations
 
+from meaning_mapper.abi.annotated_observation import AnnotatedObservation
+from meaning_mapper.abi.annotation_view import AnnotationView
+from meaning_mapper.mapper.annotation_mapper import map_annotation
 from meaning_mapper.version import __version__
 
-__all__ = ["__version__", "map_observation"]
-
-
-def map_observation(*args, **kwargs):
-    """Map a raw observation into a HEXT Observation Object.
-
-    Thin product-facing alias over the Semantic Annotator Core reference library.
-    """
-    from semantic_annotator.pipeline import annotate
-
-    return annotate(*args, **kwargs)
+__all__ = [
+    "AnnotatedObservation",
+    "AnnotationView",
+    "__version__",
+    "map_annotation",
+]

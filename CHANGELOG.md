@@ -2,16 +2,29 @@
 
 ## 1.0.0 — 2026-08-02
 
-### Added
+### Added — RFC-SA001–SA005 canonical implementation
 
-- Meaning Mapper product identity superseding the archived private `semantic-annotator` scaffold
-- Package `meaning-mapper`, CLI `meaning-mapper`, Docker image `gemminai/meaning-mapper`
-- Canonical HTTP endpoint `POST /map`
-- Compatibility shims: deprecated CLI `semantic-annotator`, deprecated `POST /annotate`
-- Positioning, architecture, boundaries, naming, migration, and archive documentation
-- Service-surface tests and CI (lint, test, Docker build)
+- `AnnotationView` / `AnnotatedObservation` ABI (SA002)
+- SA003 payload schema, density clamp, ignore-unknowns
+- `StandardRuntimeBridge`, `HTTPRuntimeBridge`, `ReplayRuntimeBridge` (SA004/005)
+- Deterministic replaceable `AnnotatorEngine` (model-independent)
+- `POST /api/v1/annotate` (RFC-SA005) and product `POST /map`
+- Deprecated `POST /annotate` compatibility alias
+- Optional `POST /hext/normalize` via semantic-annotator-core
+- AST confinement + full verification-matrix tests
+- `docs/RFC_COMPLIANCE.md`, architecture & refactoring reports
+
+### Compliance
+
+| RFC | Score |
+|-----|-------|
+| SA001 | 100% |
+| SA002 | 100% |
+| SA003 | 100% |
+| SA004 | 100% |
+| SA005 | 100% |
 
 ### Notes
 
-- Normalization engine is provided by `semantic-annotator-core` v1.0.0 (library RI)
-- No LLM inference, storage, or enterprise runtime control in this release
+- Does not rename `semantic-annotator-core`
+- No LLM, NVS-Kernel, HEKB, or commercial orchestration

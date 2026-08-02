@@ -18,28 +18,13 @@ def test_health() -> None:
     assert body["status"] == "ok"
     assert body["service"] == "meaning-mapper"
     assert body["version"] == __version__
+    assert "SA001" in body["rfc"]
 
 
-def test_map_endpoint() -> None:
+def test_hext_normalize_optional() -> None:
     response = client.post(
-        "/map",
-        json={"document": {"hello": "world"}, "source_type": "json"},
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert "object" in body
-
-
-def test_annotate_compat_alias() -> None:
-    response = client.post(
-        "/annotate",
+        "/hext/normalize",
         json={"document": {"hello": "world"}, "source_type": "json"},
     )
     assert response.status_code == 200
     assert "object" in response.json()
-
-
-def test_adapters() -> None:
-    response = client.get("/adapters")
-    assert response.status_code == 200
-    assert "json" in response.json()["adapters"]

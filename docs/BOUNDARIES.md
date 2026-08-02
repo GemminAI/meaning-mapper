@@ -2,29 +2,30 @@
 
 ## Owns
 
-- Meaning Mapper product identity (brand, README, package, CLI, Docker)
-- Reference HTTP service surface (`/map`, `/health`, `/adapters`)
-- Migration and archive documentation for the Semantic Annotator rename
-- Compatibility shims that preserve integrator continuity without leaking proprietary tech
+- RFC-SA001–SA005 Reference Service implementation
+- Meaning Mapper product identity (CLI, Docker, `/map`)
+- Domain-neutral ABI (`AnnotationView`, `AnnotatedObservation`)
+- Runtime Bridge confinement zone (`runtime_bridge.py`)
+- Deterministic default annotator engine
 
 ## Does not own
 
 | Concern | Owner |
 |---------|-------|
-| Normalization algorithms / adapters | [`semantic-annotator-core`](https://github.com/GemminAI/semantic-annotator-core) |
-| HEXT normative schema / XSD | [HEXT-AI/hxt-spec](https://github.com/HEXT-AI/hxt-spec) |
-| Open Standards RFCs & conformance | [`sensos-docs`](https://github.com/GemminAI/sensos-docs) / [sensos.org](https://sensos.org/Open-Standards) |
-| Reference runtime protocols | [`nvs-runtime`](https://github.com/GemminAI/nvs-runtime) |
+| HEXT normalization algorithms | [`semantic-annotator-core`](https://github.com/GemminAI/semantic-annotator-core) |
+| HEXT normative schema | [HEXT-AI/hxt-spec](https://github.com/HEXT-AI/hxt-spec) |
+| Open Standards RFCs | [`sensos-docs`](https://github.com/GemminAI/sensos-docs) |
+| Reference runtime | [`nvs-runtime`](https://github.com/GemminAI/nvs-runtime) |
 | Enterprise evaluation / control | `nvs-kernel` / SensOS commercial (private) |
-| Knowledge persistence | HEKB (downstream) |
 
-## Forbidden in this repository
+## Forbidden
 
-- Kernel logic, DAK internals, Execution Algebra
-- Enterprise runtime admission, CBAC private mechanics, budget/control orchestration details
-- LLM provider SDKs or non-deterministic enrichment pipelines
-- Secrets, billing, multi-tenant auth products
+- NVS-Kernel / HEKB / SensOS commercial imports
+- DAK, Execution Algebra, proprietary control-plane logic
+- LLM provider SDKs in the default engine
+- Importing `RuntimeAnnotationDTO` outside `runtime_bridge.py`
+- Importing `httpx` / `requests` inside `abi/`, `mapper/`, `payload/`, `engine/`
 
-## Security posture
+## AST enforcement
 
-Meaning Mapper is intentionally secret-light: no API keys or database passwords are required for the reference transform path.
+See `tests/test_sa002_abi.py` (`test_dto_confinement_ast`, `test_boundary_purity_ast`).

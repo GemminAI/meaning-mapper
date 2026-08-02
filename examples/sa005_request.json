@@ -1,0 +1,13 @@
+{
+  "client_id": "gemminai-exp5000-node-01",
+  "observation_id": "obs_9482_f102",
+  "prompt_id": "prompt_stability_analysis_v1",
+  "timestamp": "2026-07-17T20:23:00Z",
+  "raw_observational_data": {
+    "acceleration": [0.01, -0.05, 9.81],
+    "voltage": 12.45,
+    "state_hash": "0xDEADBEEF",
+    "state": "Normal Operating State",
+    "semantic_class": "system_stability_basin"
+  }
+}
