@@ -1,20 +1,25 @@
-# RFC-SA001–SA005 Compliance Matrix
+# RFC-MM001–MM005 Compliance Matrix
 
 **Product:** Meaning Mapper v1.0  
-**Authority:** RFC-SA001 … RFC-SA005 (canonical)  
+**Authority:** **RFC-MM001 … RFC-MM005** (canonical)  
+**Legacy:** RFC-SA001–SA005 are **Superseded** (historical only)  
 **Date:** 2026-08-02
+
+> Namespace note: RFC-SA → RFC-MM migration is documented in
+> `RFCv3_draft/rfc/MIGRATION_SA_TO_MM.md` and sensos-docs
+> `docs/public/RFC_SA_TO_MM_MIGRATION.md`.
 
 ## Phase 1 — Architecture Compliance Report (pre → post)
 
-| RFC | Pre-impl | Post-impl | Status |
-|-----|----------|-----------|--------|
-| RFC-SA001 | ~15% | **100%** | Principles + layer map implemented |
-| RFC-SA002 | ~0% | **100%** | `AnnotationView` ABI + confinement tests |
-| RFC-SA003 | ~0% | **100%** | Payload schema + density clamp + ignore unknowns |
-| RFC-SA004 | ~0% | **100%** | `runtime_bridge.py` single copy boundary |
-| RFC-SA005 | ~10% | **100%** | `POST /api/v1/annotate` + resilient client bridge |
+| RFC (canonical) | Legacy | Post-impl | Status |
+|-----------------|--------|-----------|--------|
+| RFC-MM001 | SA001 | **100%** | Principles + layer map implemented |
+| RFC-MM002 | SA002 | **100%** | Meaning View (`AnnotationView`) ABI + confinement tests |
+| RFC-MM003 | SA003 | **100%** | Payload schema + density clamp + ignore unknowns |
+| RFC-MM004 | SA004 | **100%** | `runtime_bridge.py` single copy boundary |
+| RFC-MM005 | SA005 | **100%** | `POST /api/v1/annotate` + `/map` + resilient client bridge |
 
-### RFC-SA001 — Semantic Annotation Architecture
+### RFC-MM001 — Meaning Mapper Architecture (was SA001)
 
 | Requirement | Status |
 |-------------|--------|
@@ -26,7 +31,7 @@
 | Layer: Annotator → Bridge → View → Mapper | ✓ |
 | No transport / storage / kernel in architecture core | ✓ |
 
-### RFC-SA002 — Annotation View ABI
+### RFC-MM002 — Meaning View ABI (was SA002)
 
 | Requirement | Status |
 |-------------|--------|
@@ -38,7 +43,7 @@
 | Single defensive copy at bridge | ✓ |
 | `RuntimeBridge` protocol | ✓ |
 
-### RFC-SA003 — Annotation Payload Schema
+### RFC-MM003 — Meaning Payload Schema (was SA003)
 
 | Requirement | Status |
 |-------------|--------|
@@ -49,7 +54,7 @@
 | `semantic_density` clamp `[0,1]` | ✓ |
 | Ignore unknowns / nullable defaults | ✓ |
 
-### RFC-SA004 — Runtime Bridge
+### RFC-MM004 — Meaning Runtime Bridge (was SA004)
 
 | Requirement | Status |
 |-------------|--------|
@@ -61,7 +66,7 @@
 | `StandardRuntimeBridge` / `ReplayRuntimeBridge` | ✓ |
 | Isolation / ignore-extra / density tests | ✓ |
 
-### RFC-SA005 — Semantic Annotator API
+### RFC-MM005 — Meaning Mapper Service API (was SA005)
 
 | Requirement | Status |
 |-------------|--------|
@@ -102,8 +107,10 @@
 
 | RFC | Score |
 |-----|-------|
-| RFC-SA001 | **100%** |
-| RFC-SA002 | **100%** |
-| RFC-SA003 | **100%** |
-| RFC-SA004 | **100%** |
-| RFC-SA005 | **100%** |
+| RFC-MM001 | **100%** |
+| RFC-MM002 | **100%** |
+| RFC-MM003 | **100%** |
+| RFC-MM004 | **100%** |
+| RFC-MM005 | **100%** |
+
+Traceability evidence SHOULD also cite **RFC-ITM001–ITM005** (cross-cutting).

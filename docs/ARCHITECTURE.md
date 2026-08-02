@@ -1,7 +1,8 @@
 # Architecture
 
 Meaning Mapper is the **SensOS Open Standards Reference Service** for the
-RFC-SA001–SA005 Semantic Annotation series.
+**RFC-MM001–MM005** Meaning Mapper product series (legacy RFC-SA001–SA005 are
+Superseded).
 
 It is **model-independent**, deterministic, and built on top of
 [`semantic-annotator-core`](https://github.com/GemminAI/semantic-annotator-core)
