@@ -1,0 +1,8 @@
+{
+  "event": "boot",
+  "device": "sensor-1",
+  "timestamp": "2026-08-02T00:00:00+00:00",
+  "payload": {
+    "text": "system online"
+  }
+}
