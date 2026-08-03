@@ -1,31 +1,72 @@
-# Repository boundaries
+# Boundaries
 
-## Owns
+Boundary before algorithm. If a responsibility below is not listed under
+**Owns**, Meaning Mapper does not implement it — it is delegated to whichever
+neighbor owns it.
 
-- RFC-SA001–SA005 Reference Service implementation
-- Meaning Mapper product identity (CLI, Docker, `/map`)
-- Domain-neutral ABI (`AnnotationView`, `AnnotatedObservation`)
-- Runtime Bridge confinement zone (`runtime_bridge.py`)
-- Deterministic default annotator engine
+## Meaning Mapper
 
-## Does not own
+**Input:** HEXT Observation
+**Output:** MeaningMeasurement
 
-| Concern | Owner |
-|---------|-------|
-| HEXT normalization algorithms | [`semantic-annotator-core`](https://github.com/GemminAI/semantic-annotator-core) |
-| HEXT normative schema | [HEXT-AI/hxt-spec](https://github.com/HEXT-AI/hxt-spec) |
-| Open Standards RFCs | [`sensos-docs`](https://github.com/GemminAI/sensos-docs) |
-| Reference runtime | [`nvs-runtime`](https://github.com/GemminAI/nvs-runtime) |
-| Enterprise evaluation / control | `nvs-kernel` / SensOS commercial (private) |
+**Owns**
 
-## Forbidden
+- Receiving a HEXT Observation
+- Observation Validation
+- Metric Tensor Estimation
+- Local Frame Resolution
+- Density Estimation
+- Covariance Estimation
+- Categorical Lift (internal stage of the measurement pipeline)
+- Topological Consistency Check
+- Generating a MeaningMeasurement
 
-- NVS-Kernel / HEKB / SensOS commercial imports
-- DAK, Execution Algebra, proprietary control-plane logic
-- LLM provider SDKs in the default engine
-- Importing `RuntimeAnnotationDTO` outside `runtime_bridge.py`
-- Importing `httpx` / `requests` inside `abi/`, `mapper/`, `payload/`, `engine/`
+**Must not**
 
-## AST enforcement
+- Hold runtime state
+- Update MSR's internal state
+- Provide long-term memory
+- Manage HEKB
+- Generate goals
+- Generate intent
+- Make policy decisions
+- Implement control logic
+- Control NVS-Kernel
+- Call an LLM
+- Generate prompts
+- Render language
 
-See `tests/test_sa002_abi.py` (`test_dto_confinement_ast`, `test_boundary_purity_ast`).
+## No independent Categorical Lift component
+
+Categorical Lift is implemented as
+[`src/meaning_mapper/lift/categorical_lift.py`](../src/meaning_mapper/lift/categorical_lift.py),
+one stage in Meaning Mapper's pipeline. There is no `cle/`,
+`categorical-lift/`, standalone "CLE Engine" module, library, or repository,
+and none should be added. Categorical Lift's extensibility (toward a
+functor, natural transformation, pullback, pushout, or commutative diagram)
+is expressed as a `typing.Protocol` other lift implementations can satisfy
+in-process — not as a new component with its own boundary.
+
+## Ecosystem responsibility table
+
+| Component | Input | Output | Owns | Must not |
+|---|---|---|---|---|
+| `semantic-annotator-core` | MeasuredObservation | HEXT Observation | Normalization, schema, ABI | Meaning measurement, memory, runtime, control |
+| **Meaning Mapper** | HEXT Observation | MeaningMeasurement | Geometric measurement, Categorical Lift | Runtime, memory, control, language |
+| MSR (`meaning-space-runtime`) | MeaningMeasurement | Runtime Meaning State | Meaning-space state, time evolution, potential field, drift | Observation parsing, measurement, memory |
+| HEKB | — | — | Long-term memory, concepts, semantic structure | Runtime, measurement, control |
+| NVS-Kernel | — | — | Control, reflex, feedback, trajectory | Observation, measurement, language |
+| Kernel Executive | — | — | Goal, intent, planning, governance | Measurement, runtime, memory |
+| LLM | — | — | Natural language rendering, code rendering, prior knowledge | Source of truth, runtime authority, measurement authority |
+
+## Crossings are structural, not shared imports
+
+Meaning Mapper does not import `semantic-annotator-core` or `msr`.
+`HEXTObservation` (`src/meaning_mapper/types.py`) is a `Mapping[str, Any]`
+describing the subset of the HEXT JSON shape this repo reads, not a shared
+class. `MeaningMeasurement` (`src/meaning_mapper/measurement/`) is
+field-for-field structurally identical to `msr.abi.MeaningMeasurement` and
+`.as_dict()`-compatible with `msr.adapters.mapper.measurement_from_payload`,
+but is Meaning Mapper's own type. This mirrors RFC-MSR01 Section 4: "any
+object satisfying a port's shape MAY be bound" — the contract is a shape, not
+a shared dependency.

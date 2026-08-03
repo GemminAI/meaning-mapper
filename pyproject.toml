@@ -1,23 +1,22 @@
 [project]
 name = "meaning-mapper"
-version = "1.0.0"
-description = "Meaning Mapper — reference service that maps raw observations into HEXT Observation Objects"
+version = "2.0.0"
+description = "Meaning Mapper — the SensOS Meaning Measurement engine: HEXT Observation -> MeaningMeasurement"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Gemmina Intelligence LLC." }]
 keywords = [
     "meaning-mapper",
-    "observation",
+    "meaning-measurement",
     "hext",
-    "normalization",
-    "semantic",
+    "geometry",
     "sensos",
     "open-standards",
     "gemminai",
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
@@ -27,24 +26,16 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "semantic-annotator @ git+https://github.com/GemminAI/semantic-annotator-core.git@v1.0.0",
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
-    "pydantic>=2.7",
-    "httpx>=0.27.0",
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
     "ruff>=0.8.0",
-    "httpx>=0.27.0",
+    "mypy>=1.13.0",
 ]
-
-[project.scripts]
-meaning-mapper = "meaning_mapper.cli:main"
-# Deprecated compatibility entry point — prefer meaning-mapper
-semantic-annotator = "meaning_mapper.cli:main_compat"
 
 [project.urls]
 Homepage = "https://github.com/GemminAI/meaning-mapper"
@@ -52,6 +43,7 @@ Documentation = "https://github.com/GemminAI/meaning-mapper#readme"
 Repository = "https://github.com/GemminAI/meaning-mapper"
 "Open Standards" = "https://sensos.org/Open-Standards"
 "Reference Library" = "https://github.com/GemminAI/semantic-annotator-core"
+"Downstream Runtime" = "https://github.com/GemminAI/meaning-space-runtime"
 HEXT = "https://github.com/HEXT-AI/hxt-spec"
 
 [build-system]
@@ -68,22 +60,36 @@ only-include = ["meaning_mapper"]
 include = [
   "src/meaning_mapper",
   "docs",
-  "examples",
   "tests",
   "LICENSE",
   "NOTICE",
   "README.md",
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
-addopts = "-v --tb=short"
+pythonpath = ["src", "tests"]
+addopts = "-v --tb=short --cov=meaning_mapper --cov-report=term-missing"
+
+[tool.coverage.run]
+branch = true
+source = ["meaning_mapper"]
+
+[tool.coverage.report]
+fail_under = 100
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "N"]
+
+[tool.mypy]
+# Type-checked against 3.12 stub syntax (numpy's .pyi requires it); the
+# package itself still only uses >=3.11 language features (requires-python).
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+files = ["src"]

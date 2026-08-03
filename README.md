@@ -1,133 +1,129 @@
 # Meaning Mapper
 
-**SensOS Open Standards Reference Service** for semantic annotation
-([RFC-SA001](docs/RFC_COMPLIANCE.md)–[RFC-SA005](docs/RFC_COMPLIANCE.md)).
+**The SensOS Meaning Measurement engine.**
 
-Meaning Mapper maps **Measured Observations** into versioned, frozen
-**AnnotationView** snapshots (SA002) with SA003 payloads — deterministically,
-without mutating source measurements, and without commercial runtime technology.
+Meaning Mapper measures. It takes a HEXT Observation and produces a
+`MeaningMeasurement` — a position `theta` in local meaning-space coordinates,
+with a declared uncertainty `sigma` — for [Meaning Space Runtime
+(MSR)](https://github.com/GemminAI/meaning-space-runtime) to consume. It does
+not annotate, hold runtime state, control anything, or render language. See
+[`docs/BOUNDARIES.md`](docs/BOUNDARIES.md).
 
 | | |
 |---|---|
 | **Product** | Meaning Mapper |
 | **Repository** | [`GemminAI/meaning-mapper`](https://github.com/GemminAI/meaning-mapper) |
 | **Python package** | `meaning-mapper` |
-| **CLI** | `meaning-mapper` |
-| **Docker image** | `gemminai/meaning-mapper` |
-| **Canonical product API** | `POST /map` |
-| **RFC transport API** | `POST /api/v1/annotate` |
-| **Library RI** | [`semantic-annotator-core`](https://github.com/GemminAI/semantic-annotator-core) |
+| **Input** | HEXT Observation (from `semantic-annotator-core`) |
+| **Output** | `MeaningMeasurement` (`theta`, `sigma`, `frame_id`, `observation_id`, `timestamp_ns`, `provenance`) |
+| **Downstream** | [`meaning-space-runtime`](https://github.com/GemminAI/meaning-space-runtime) (RFC-MSR01) |
 | **License** | Apache-2.0 |
-| **Version** | 1.0.0 |
-| **RFC compliance** | SA001–SA005 **100%** — see [`docs/RFC_COMPLIANCE.md`](docs/RFC_COMPLIANCE.md) |
+| **Version** | 2.0.0 |
 
 ## What it does
 
-- Accepts measured observational data (SA005 request)
-- Produces descriptive SA003-aligned annotations via a **replaceable** engine
-- Lifts mutable runtime DTOs across the **sole** Runtime Bridge copy boundary (SA004)
-- Exposes frozen `AnnotationView` / `AnnotatedObservation` to domain consumers (SA002)
-- Remains usable when annotation fails (Principle 5 → empty view)
+Runs one deterministic measurement pipeline, in order:
 
-## What it does **not** do
+1. **Observation Validation** — receive and check a HEXT Observation.
+2. **Metric Tensor Estimation** — a local SPD metric `g` over raw features.
+3. **Local Frame Resolution** — an orthonormal basis (whitening frame) for `g`.
+4. **Density Estimation** — a clamped local evidence-density scalar.
+5. **Covariance Estimation** — `Sigma`, the metric inverse scaled by density.
+6. **Categorical Lift** *(internal stage, not a separate engine)* — projects
+   raw features through the local frame into `theta`.
+7. **Topological Consistency Check** — theta, frame, and Sigma must agree.
+8. **MeaningMeasurement Generation** — package the result.
 
-- LLM inference or proprietary model orchestration
-- Mutate MeasuredObservation values
-- Import NVS-Kernel, HEKB, or SensOS commercial internals
-- Persist annotations or own storage
+Every stage is pure and deterministic: no model calls, no wall-clock
+randomness, no shared runtime state between observations.
+
+## What it does not do
+
+Runtime state, MSR's internal state, long-term memory, HEKB, goal/intent
+generation, policy decisions, control logic, NVS-Kernel control, LLM calls,
+prompt generation, or language rendering. See
+[`docs/BOUNDARIES.md`](docs/BOUNDARIES.md) for the full Owns / Must Not list.
+
+## Quick start
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+```python
+from meaning_mapper import map_observation
+
+observation = {
+    "object": {"id": "obs-1"},
+    "evidence": {"body": "the quick brown fox jumps over the lazy dog"},
+    "semantic": {"metadata": {}},
+    "final_seal": {"sealed_at": "2026-08-04T00:00:00Z", "state_hash": "a" * 64},
+    "provenance": {"contributors": [{"agent": "software:semantic-annotator@1.0.0"}]},
+}
+
+result = map_observation(observation)
+if result.is_quarantined:
+    print(result.quarantine)  # QuarantineReason(stage=..., detail=..., ...)
+else:
+    measurement = result.measurement
+    print(measurement.theta, measurement.sigma)
+    # measurement.as_dict() is accepted by
+    # msr.adapters.mapper.measurement_from_payload directly.
+```
 
 ## Ecosystem
 
 ```text
-HEXT
-  → semantic-annotator-core   (Reference Library)
-  → Meaning Mapper            (Reference Service — this repo)
-  → nvs-runtime               (Reference Runtime)
-  → SensOS / NVS-Kernel       (Commercial)
-```
-
-## Quick start
-
-### HTTP (RFC-SA005)
-
-```bash
-docker compose up --build -d
-
-curl -s http://localhost:8080/health
-
-curl -s http://localhost:8080/api/v1/annotate \
-  -H 'content-type: application/json' \
-  -d @examples/sa005_request.json
-
-# Product canonical alias (same contract):
-curl -s http://localhost:8080/map \
-  -H 'content-type: application/json' \
-  -d @examples/sa005_request.json
-```
-
-Deprecated: `POST /annotate` (same body; prefer `/map` or `/api/v1/annotate`).
-
-### CLI
-
-```bash
-pip install -e ".[dev]"
-
-meaning-mapper annotate examples/sa005_request.json
-meaning-mapper examples/sample.json   # bare observational JSON
-meaning-mapper hext examples/sample.json   # optional Core HEXT normalize
-```
-
-### SDK
-
-```python
-from meaning_mapper import map_annotation
-from meaning_mapper.engine import DeterministicAnnotatorEngine
-from meaning_mapper.runtime_bridge import StandardRuntimeBridge
-
-wire = DeterministicAnnotatorEngine().annotate(
-    observation_id="obs_1",
-    prompt_id="prompt_stability_analysis_v1",
-    raw_observational_data={"acceleration": [0.01, -0.05, 9.81]},
-)
-view = StandardRuntimeBridge().bridge_annotation(wire)
-annotated = map_annotation("prompt_stability_analysis_v1", view, observation_id="obs_1")
-```
-
-## Architecture
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-```text
 MeasuredObservation
-  → AnnotatorEngine (replaceable)
-  → RuntimeAnnotationDTO          # confined to runtime_bridge.py
-  → Runtime Bridge (single copy)
-  ======== SA-002 ABI BOUNDARY ========
-  → AnnotationView (frozen)
-  → Annotation Mapper (no second copy)
-  → AnnotatedObservation
+        |
+        v
+semantic-annotator-core
+        |
+        v
+HEXT Observation
+        |
+        v
+Meaning Mapper (this repo)
+    Validation -> Metric Tensor -> Local Frame -> Density
+        -> Covariance -> Categorical Lift -> Topology -> Measurement
+        |
+        v
+MeaningMeasurement
+        |
+        v
+Meaning Space Runtime (RFC-MSR01)
 ```
+
+Meaning Mapper does not import `semantic-annotator-core` or `msr`. Every
+crossing is a structural port (a plain `Mapping`/dataclass shape), matching
+RFC-MSR01 Section 4 — the same convention MSR itself uses at every boundary.
+
+## Categorical Lift
+
+Categorical Lift is an internal pipeline stage
+([`src/meaning_mapper/lift/categorical_lift.py`](src/meaning_mapper/lift/categorical_lift.py)),
+not a separate engine, module, or repository. The initial implementation is a
+deterministic linear projection through the local frame. `CategoricalLift` is
+a `typing.Protocol`, so this can later be replaced by a functor, natural
+transformation, pullback/pushout, or commutative-diagram construction without
+changing any other stage's contract.
 
 ## Documentation
 
 | Doc | Purpose |
 |-----|---------|
-| [`docs/RFC_COMPLIANCE.md`](docs/RFC_COMPLIANCE.md) | Compliance matrix & scores |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layer diagram |
-| [`docs/REFACTORING_REPORT.md`](docs/REFACTORING_REPORT.md) | Files changed |
-| [`docs/POSITIONING.md`](docs/POSITIONING.md) | Product vs library vs runtime |
-| [`docs/MIGRATION.md`](docs/MIGRATION.md) | Legacy name migration |
-| [`docs/BOUNDARIES.md`](docs/BOUNDARIES.md) | Ownership / forbidden imports |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline and stage responsibilities |
+| [`docs/BOUNDARIES.md`](docs/BOUNDARIES.md) | Owns / Must Not, ecosystem responsibility table |
+| [`docs/RFC_COMPLIANCE.md`](docs/RFC_COMPLIANCE.md) | RFC alignment and a known RFC/implementation sync gap |
 
 ## Tests
 
 ```bash
-pytest
+pytest             # 100% line + branch coverage enforced (fail_under = 100)
 ruff check src tests
+mypy               # strict, src/
 ```
-
-Verification matrices cover RFC-SA002–SA005 (DTO confinement, ignore-unknowns,
-density clamp, defensive isolation, timeout/retry/429 client behavior).
 
 ## License
 

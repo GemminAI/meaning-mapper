@@ -1,18 +1,21 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 Gemmina Intelligence LLC.
+"""Meaning Mapper — the SensOS Meaning Measurement engine.
 
-"""Meaning Mapper — SensOS Open Standards Reference Service (RFC-SA001–SA005)."""
+Boundary: HEXT Observation in, MeaningMeasurement out. Meaning Mapper
+measures; it does not hold runtime state, control anything, or render
+language. See ``docs/BOUNDARIES.md``.
+"""
 
 from __future__ import annotations
 
-from meaning_mapper.abi.annotated_observation import AnnotatedObservation
-from meaning_mapper.abi.annotation_view import AnnotationView
-from meaning_mapper.mapper.annotation_mapper import map_annotation
+from meaning_mapper.errors import QuarantineReason
+from meaning_mapper.measurement.meaning_measurement import MeaningMeasurement
+from meaning_mapper.pipeline import MeasurementResult, map_observation
 from meaning_mapper.version import __version__
 
 __all__ = [
-    "AnnotatedObservation",
-    "AnnotationView",
+    "MeaningMeasurement",
+    "MeasurementResult",
+    "QuarantineReason",
     "__version__",
-    "map_annotation",
+    "map_observation",
 ]
