@@ -1,5 +1,13 @@
 # RFC Compliance
 
+> **2026-08-04 update**: RFC-MM001v2–RFC-MM005v2 ("Post-Implementation
+> Realignment") now supersede the v1 `AnnotationView` ABI text referenced
+> throughout this document as the "known sync gap." That gap is
+> substantially closed as of v2.2.0 — see
+> [`docs/RFC_ALIGNMENT.md`](RFC_ALIGNMENT.md) for the current, authoritative
+> conformance matrix and deviation log. The section below is kept for
+> historical context on *why* the v1 gap existed.
+
 ## RFC-MSR01 (Meaning Space Runtime) — the binding contract
 
 [RFC-MSR01](https://github.com/GemminAI/meaning-space-runtime/blob/main/RFC-MSR01.md)

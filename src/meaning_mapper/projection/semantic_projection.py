@@ -23,4 +23,4 @@ from meaning_mapper.frame.local_frame import LocalFrame
 
 def project_to_theta(raw_features: FloatArray, frame: LocalFrame) -> tuple[float, ...]:
     """Project ``raw_features`` through ``frame`` into local semantic coordinates."""
-    return to_vector_tuple(frame.basis @ raw_features)
+    return to_vector_tuple(frame.array @ raw_features)

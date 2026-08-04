@@ -6,10 +6,14 @@ same input array, same output, every time.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from numpy.typing import NDArray
 
 FloatArray = NDArray[np.float64]
+Vector = tuple[float, ...]
+Matrix = tuple[tuple[float, ...], ...]
 
 
 def symmetrize(matrix: FloatArray) -> FloatArray:
@@ -53,9 +57,30 @@ def whitening_frame(metric_tensor: FloatArray) -> FloatArray:
     return np.asarray(np.linalg.inv(cholesky_lower.T), dtype=np.float64)
 
 
-def to_matrix_tuple(matrix: FloatArray) -> tuple[tuple[float, ...], ...]:
+def to_matrix_tuple(matrix: FloatArray | Matrix) -> Matrix:
     return tuple(tuple(float(x) for x in row) for row in matrix)
 
 
-def to_vector_tuple(vector: FloatArray) -> tuple[float, ...]:
+def to_vector_tuple(vector: FloatArray | Vector) -> Vector:
     return tuple(float(x) for x in vector)
+
+
+def matrix_array(matrix: Matrix) -> FloatArray:
+    """Reconstruct a mutable ``ndarray`` view from a frozen ``Matrix`` tuple.
+
+    ABI dataclasses store ``Matrix``/``Vector`` (immutable, RFC-MM002 SS4.2
+    Defensive Tuple Locking); linear-algebra code converts back to ``ndarray``
+    on demand at the point of use rather than holding a mutable array field.
+    """
+    return np.asarray(matrix, dtype=np.float64)
+
+
+def freeze_matrix(value: Any) -> Matrix:
+    """Defensive-copy + freeze any array-like 2D input into a ``Matrix`` tuple.
+
+    Idempotent: freezing an already-frozen ``Matrix`` reconstructs an equal
+    tuple. Called from ``__post_init__`` on every ABI dataclass that carries a
+    2D field, so construction is the sole defensive-copy boundary regardless
+    of whether the caller passed an ``ndarray`` or a plain nested sequence.
+    """
+    return tuple(tuple(float(x) for x in row) for row in value)

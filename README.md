@@ -15,10 +15,11 @@ not annotate, hold runtime state, control anything, or render language. See
 | **Repository** | [`GemminAI/meaning-mapper`](https://github.com/GemminAI/meaning-mapper) |
 | **Python package** | `meaning-mapper` |
 | **Input** | HEXT Observation (from `semantic-annotator-core`) |
-| **Output** | `MeaningMeasurement` (`theta`, `sigma`, `frame_id`, `observation_id`, `timestamp_ns`, `provenance`) |
+| **Output** | `MeaningMeasurement` (`measurement_id`, `observation_id`, `frame_id`, `theta`, `sigma`, `timestamp_ns`, `density`, `provenance`, `provenance_hash`) |
 | **Downstream** | [`meaning-space-runtime`](https://github.com/GemminAI/meaning-space-runtime) (RFC-MSR01) |
 | **License** | Apache-2.0 |
-| **Version** | 2.1.0 |
+| **Version** | 2.2.0 |
+| **Spec** | RFC-MM001v2–RFC-MM005v2 (see [`docs/RFC_ALIGNMENT.md`](docs/RFC_ALIGNMENT.md)) |
 
 ## What it does
 
@@ -27,15 +28,22 @@ Runs one deterministic measurement pipeline, in order:
 1. **Observation Validation** — receive and check a HEXT Observation.
 2. **Metric Tensor Estimation** — a local SPD metric `g` over raw features.
 3. **Local Frame Resolution** — an orthonormal basis (whitening frame) for `g`.
-4. **Density Estimation** — a clamped local evidence-density scalar.
-5. **Covariance Estimation** — `Sigma`, the metric inverse scaled by density.
+4. **Density Estimation** — a clamped local evidence-density scalar, and the
+   entropy-based semantic density `D_s` (RFC-MM003).
+5. **Covariance Estimation** — `Sigma = sigma_input^2 * (B @ B.T)` (RFC-MM003),
+   where `B` is the local frame's whitening basis.
 6. **Semantic Projection** *(fixed geometric step, not Categorical Lift)* —
    projects raw features through the local frame into `theta`.
 7. **Topological Consistency Check** — theta, frame, and Sigma must agree.
+   An optional, stateless Non-Discontinuity Guard (RFC-MM004) also runs here
+   if the caller supplies `previous_theta` — Meaning Mapper never retains it.
 8. **MeaningMeasurement Generation** — package the result.
 
 Every stage is pure and deterministic: no model calls, no wall-clock
-randomness, no shared runtime state between observations.
+randomness, no shared runtime state between observations. See
+[`docs/RFC_ALIGNMENT.md`](docs/RFC_ALIGNMENT.md) for exactly where this
+implementation follows RFC-MM001v2–RFC-MM005v2 and where/why it
+intentionally deviates.
 
 ## What it does not do
 

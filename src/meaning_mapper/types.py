@@ -22,7 +22,18 @@ HEXTObservation = Mapping[str, Any]
 
 @dataclass(frozen=True, slots=True)
 class ValidatedObservation:
-    """The typed, checked subset of a HEXT Observation the pipeline operates on."""
+    """The typed, checked subset of a HEXT Observation the pipeline operates on.
+
+    RFC-MM002 SS2.1 describes ``HEXTObservation`` as a flat
+    ``{observation_id, timestamp_ns, features, feature_dim, sensor_hash}``
+    record. The real upstream HEXT wire format (``semantic-annotator-core``)
+    is nested JSON (``object``/``evidence``/``final_seal``/``semantic``/
+    ``provenance`` sections), which this type's field names
+    (``text``, ``metadata``, ``content_hash``) reflect -- renaming them to
+    match the RFC's flat shape would break real HEXT ingestion for no
+    behavioral gain. ``feature_dim`` is added below as the one field that is
+    both in the RFC and cleanly derivable. See ``docs/RFC_ALIGNMENT.md`` SS1.
+    """
 
     observation_id: str
     text: str
@@ -31,3 +42,7 @@ class ValidatedObservation:
     timestamp_ns: int
     raw_features: FloatArray = field(repr=False, compare=False)
     provenance: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def feature_dim(self) -> int:
+        return int(self.raw_features.shape[0])

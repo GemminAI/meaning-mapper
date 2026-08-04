@@ -14,6 +14,7 @@ def test_valid_observation_is_extracted() -> None:
     assert result.content_hash == "a" * 64
     assert result.provenance == ("software:semantic-annotator@1.0.0",)
     assert result.raw_features.shape == (8,)
+    assert result.feature_dim == 8
 
 
 def test_non_mapping_observation_is_quarantined() -> None:

@@ -25,4 +25,12 @@ SIGMA_EIGEN_CEILING = 1.0e6
 # self-consistent with its own reported uncertainty.
 THETA_BOUND_SCALE = 50.0
 
+# Non-Discontinuity Guard (RFC-MM004 SS4): the max L2 jump between two
+# consecutive theta measurements the caller may consider self-consistent.
+# RFC-MM004 does not specify a numeric value for Delta_max; this default is
+# an experimental assumption documented in docs/RFC_ALIGNMENT.md, expressed
+# on the same THETA_BOUND_SCALE order of magnitude as the existing topology
+# bound rather than an arbitrary unrelated constant.
+THETA_DISCONTINUITY_MAX = 10.0
+
 DEFAULT_FRAME_ID = "meaning-mapper.default"
