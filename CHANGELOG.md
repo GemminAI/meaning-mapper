@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.1.0 — 2026-08-04
+
+### Reverted: Categorical Lift is an independent component again
+
+Hours after the 2.0.0 rebuild integrated Categorical Lift into Meaning
+Mapper, that decision was reverted: SensOS's product architecture is tiered
+(OSS: `semantic-annotator-core` + Meaning Mapper + MSR, fully usable with no
+cloud dependency; Pro: Categorical Lift Engine; Enterprise: HEKB Cloud), and
+Categorical Lift — trajectory interpretation, concept discovery, knowledge
+crystallization, HEKB integration — is Pro-tier knowledge generation, not
+OSS-tier measurement. The software boundary now matches the product
+boundary. See `docs/RFC_COMPLIANCE.md` for the full rationale.
+
+- Renamed the pipeline's stage 6 from Categorical Lift to **Semantic
+  Projection** (`src/meaning_mapper/projection/semantic_projection.py`,
+  formerly `lift/categorical_lift.py`): a fixed, non-extensible geometric
+  projection (`theta = frame.basis @ raw_features`), with no
+  `typing.Protocol` seam and no framing toward functors, natural
+  transformations, pullbacks, pushouts, or commutative diagrams — that
+  extensibility now belongs entirely to the independent Categorical Lift
+  Engine (CLE), a separate repository.
+- `map_observation` no longer takes a pluggable `lift` parameter.
+- `QuarantineStage.CATEGORICAL_LIFT` renamed to
+  `QuarantineStage.SEMANTIC_PROJECTION`.
+- `docs/BOUNDARIES.md` rewritten: CLE has its own Input/Output/Owns/Must-not
+  section and an ecosystem-table row; MM's Must-not list now explicitly
+  names Concept generation, Category generation, Knowledge Crystallization,
+  Homotopy Analysis, and HEKB commits.
+- 71 tests, 100% line + branch coverage maintained, ruff clean, mypy strict
+  clean.
+
 ## 2.0.0 — 2026-08-04
 
 ### Rebuilt as the geometric Meaning Measurement engine

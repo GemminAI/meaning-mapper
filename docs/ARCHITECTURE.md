@@ -23,7 +23,7 @@ HEXTObservation
 [5] Covariance Estimation       -> Covariance
       |
       v
-[6] Categorical Lift            -> theta: tuple[float, ...]  (internal stage)
+[6] Semantic Projection         -> theta: tuple[float, ...]  (fixed geometric step)
       |
       v
 [7] Topological Consistency     -> None | QuarantineReason
@@ -41,23 +41,30 @@ HEXTObservation
 | 3. Local Frame Resolution | `frame/local_frame.py` | `MetricTensor` | `LocalFrame` — orthonormal whitening basis, bootstraps to identity when needed |
 | 4. Density Estimation | `density/density_estimation.py` | raw features | `Density` — clamped scalar |
 | 5. Covariance Estimation | `covariance/covariance_estimation.py` | `MetricTensor`, `Density` | `Covariance` — SPD, eigenvalue-clamped |
-| 6. Categorical Lift | `lift/categorical_lift.py` | raw features, `LocalFrame` | `theta` |
+| 6. Semantic Projection | `projection/semantic_projection.py` | raw features, `LocalFrame` | `theta` |
 | 7. Topological Consistency Check | `topology/topological_consistency.py` | `theta`, `LocalFrame`, `Covariance` | pass, or `QuarantineReason` |
 | 8. MeaningMeasurement Generation | `measurement/meaning_measurement.py`, `pipeline.py` | everything above | `MeaningMeasurement` |
 
 ## Why this order
 
-Metric Tensor Estimation runs on the *raw* (pre-lift) feature space, not on
-`theta` — there is no `theta` yet at that point. It estimates how much a unit
-step in each raw coordinate should count (dense, frequently-seen coordinates
-count for less). Local Frame Resolution turns that metric into an
-orthonormal basis. Density and Covariance Estimation build the uncertainty
-that basis implies. Only then does Categorical Lift place the observation's
-raw features *in* that frame to get `theta` — so `theta` and `Sigma` are
-computed in a mutually consistent local geometry by construction, and
-Topological Consistency Check is what verifies that construction actually
-held (dimensions agree, nothing is non-finite, `theta` is not absurdly far
-from what its own `Sigma` would predict).
+Metric Tensor Estimation runs on the *raw* (pre-projection) feature space,
+not on `theta` — there is no `theta` yet at that point. It estimates how
+much a unit step in each raw coordinate should count (dense,
+frequently-seen coordinates count for less). Local Frame Resolution turns
+that metric into an orthonormal basis. Density and Covariance Estimation
+build the uncertainty that basis implies. Only then does Semantic Projection
+place the observation's raw features *in* that frame to get `theta` — so
+`theta` and `Sigma` are computed in a mutually consistent local geometry by
+construction, and Topological Consistency Check is what verifies that
+construction actually held (dimensions agree, nothing is non-finite, `theta`
+is not absurdly far from what its own `Sigma` would predict).
+
+Semantic Projection is intentionally the *last* geometric step and the
+*only* place `theta` is produced — it is not designed to be extended toward
+category theory (functors, pullbacks, natural transformations). That
+extensibility belongs to Categorical Lift Engine (CLE), a separate,
+independent component downstream of MSR; see
+[`docs/BOUNDARIES.md`](BOUNDARIES.md).
 
 ## Determinism
 

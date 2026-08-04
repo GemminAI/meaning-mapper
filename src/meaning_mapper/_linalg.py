@@ -46,8 +46,8 @@ def whitening_frame(metric_tensor: FloatArray) -> FloatArray:
 
     ``metric_tensor`` MUST already be SPD (callers clamp before this point).
     The frame ``F`` satisfies ``F @ metric_tensor @ F.T == I``: it is the
-    basis in which the metric looks Euclidean, i.e. the local frame in which
-    Categorical Lift places coordinates.
+    basis in which the metric looks Euclidean, i.e. the local frame Semantic
+    Projection places coordinates in.
     """
     cholesky_lower = np.linalg.cholesky(symmetrize(metric_tensor))
     return np.asarray(np.linalg.inv(cholesky_lower.T), dtype=np.float64)

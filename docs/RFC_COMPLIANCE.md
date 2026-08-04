@@ -35,13 +35,30 @@ to catch up to this implementation, not the other way around. Updating
 `RFCv3_draft/rfc/MM/` is out of scope for this repository and was not
 requested here — flagged for a separate RFC-authoring pass.
 
+## Product-tier alignment (2026-08-04, reverted same day)
+
+Earlier the same day, Categorical Lift was integrated into Meaning Mapper as
+an internal pipeline stage. That decision was reverted a few hours later:
+SensOS's product architecture is tiered — OSS/free (`semantic-annotator-core`
++ Meaning Mapper + MSR, fully usable with no cloud dependency), Pro
+(Categorical Lift Engine — trajectory interpretation, concept discovery,
+knowledge crystallization, HEKB integration), and Enterprise (HEKB Cloud,
+governance, team sync) — and that split is a business-architecture fact, not
+an implementation detail MM can absorb. The software boundary now mirrors it:
+MM stops at a single measurement; CLE, an independent component, is what
+turns a *sequence* of measurements into knowledge. Neither reversion changed
+the RFC-MM001–MM005 / RFC-MSR01 sync-gap situation above — this is a second,
+independent note about a decision that was made and then reverted entirely
+within this repository's own history, not a further RFC drift.
+
 ## What this repository actually claims
 
 - Input: HEXT Observation (structural, not a shared import from
   `semantic-annotator-core`).
 - Output: `MeaningMeasurement`, structurally compatible with
   `msr.abi.MeaningMeasurement` / RFC-MSR01 Section 2.
-- Categorical Lift is internal (RFC-MM series' successor text, once written,
-  should keep it that way — no independent `cle` component; see
-  [`docs/BOUNDARIES.md`](BOUNDARIES.md)).
+- Semantic Projection (placing raw features in the local frame to get
+  `theta`) is internal and fixed; Categorical Lift itself — and any future
+  RFC-CLE series — belongs to the independent Categorical Lift Engine, not
+  this repository. See [`docs/BOUNDARIES.md`](BOUNDARIES.md).
 - Deterministic, LLM-independent, no runtime state, no control logic.

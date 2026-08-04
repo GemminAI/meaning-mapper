@@ -1,7 +1,7 @@
 """Stage 3: Local Frame Resolution.
 
 Turns the metric tensor into an orthonormal local frame (a whitening basis):
-the coordinate system Categorical Lift places ``theta`` in. When an
+the coordinate system Semantic Projection places ``theta`` in. When an
 observation carries no informative content (all-zero raw features, or any
 matrix Cholesky rejects despite upstream clamping) resolution bootstraps the
 canonical identity frame rather than failing -- there being "nothing local

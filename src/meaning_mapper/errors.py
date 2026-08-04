@@ -20,7 +20,7 @@ class QuarantineStage(StrEnum):
     LOCAL_FRAME = "local_frame"
     DENSITY = "density"
     COVARIANCE = "covariance"
-    CATEGORICAL_LIFT = "categorical_lift"
+    SEMANTIC_PROJECTION = "semantic_projection"
     TOPOLOGY = "topology"
     MEASUREMENT = "measurement"
 

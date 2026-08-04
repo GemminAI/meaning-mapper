@@ -17,9 +17,9 @@ from meaning_mapper.covariance.covariance_estimation import estimate_covariance
 from meaning_mapper.density.density_estimation import estimate_density
 from meaning_mapper.errors import QuarantineReason
 from meaning_mapper.frame.local_frame import resolve_local_frame
-from meaning_mapper.lift.categorical_lift import CategoricalLift, default_lift, lift_to_theta
 from meaning_mapper.measurement.meaning_measurement import MeaningMeasurement
 from meaning_mapper.metrics.metric_tensor import estimate_metric_tensor
+from meaning_mapper.projection.semantic_projection import project_to_theta
 from meaning_mapper.topology.topological_consistency import check_topological_consistency
 from meaning_mapper.types import HEXTObservation
 from meaning_mapper.validation.observation_validation import validate_observation
@@ -46,7 +46,6 @@ def map_observation(
     observation: HEXTObservation,
     *,
     frame_id: str = DEFAULT_FRAME_ID,
-    lift: CategoricalLift = default_lift,
 ) -> MeasurementResult:
     """Run the full measurement pipeline over a single HEXT Observation."""
     validated = validate_observation(observation)
@@ -67,7 +66,7 @@ def map_observation(
     frame = resolve_local_frame(metric_tensor)
     density = estimate_density(validated.raw_features)
     covariance = estimate_covariance(metric_tensor, density)
-    theta = lift_to_theta(validated.raw_features, frame, lift)
+    theta = project_to_theta(validated.raw_features, frame)
 
     topology_failure = check_topological_consistency(
         theta, frame, covariance, observation_id=validated.observation_id

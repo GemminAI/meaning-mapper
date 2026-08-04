@@ -1,6 +1,6 @@
 """Stage 2: Metric Tensor Estimation.
 
-Estimates a local metric tensor ``g`` over the raw (pre-lift) feature space:
+Estimates a local metric tensor ``g`` over the raw (pre-projection) feature space:
 a diagonal SPD matrix where dense feature coordinates (high raw mass, seen
 often) get a *smaller* weight than sparse ones, so a unit step in a rare
 coordinate counts for more than a unit step in a common one. ``g`` is what
