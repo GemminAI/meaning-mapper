@@ -18,7 +18,7 @@ not annotate, hold runtime state, control anything, or render language. See
 | **Output** | `MeaningMeasurement` (`measurement_id`, `observation_id`, `frame_id`, `theta`, `sigma`, `timestamp_ns`, `density`, `provenance`, `provenance_hash`) |
 | **Downstream** | [`meaning-space-runtime`](https://github.com/GemminAI/meaning-space-runtime) (RFC-MSR01) |
 | **License** | Apache-2.0 |
-| **Version** | 2.2.0 |
+| **Version** | 2.3.0 |
 | **Spec** | RFC-MM001v2–RFC-MM005v2 (see [`docs/RFC_ALIGNMENT.md`](docs/RFC_ALIGNMENT.md)) |
 
 ## What it does
@@ -55,6 +55,49 @@ Everything past a single measurement — interpreting a *sequence* of
 measurements into knowledge — belongs to the independent Categorical Lift
 Engine (CLE), not this repository. See
 [`docs/BOUNDARIES.md`](docs/BOUNDARIES.md) for the full Owns / Must Not list.
+
+This repository does not implement Semantic Grounding, Categorical Lift,
+Pullback, Recovery, or Compression either — `meaning_mapper.cle` (below)
+only calls CLE's independent HTTP service for those; it reimplements none
+of them.
+
+## CLE Adapter (`meaning_mapper.cle`)
+
+An HTTP-only client to CLE, the independent Categorical Lift Engine
+service. Two things it is not: it is not CLE (no CLE algorithm is
+reimplemented — every method builds a request, sends it, and parses the
+response); and it is not a change to what Meaning Mapper measures — the
+existing pipeline above is untouched.
+
+```python
+from meaning_mapper import map_observation
+from meaning_mapper.cle.client import CLEClient
+from meaning_mapper.cle.grounding import ground_observation
+from meaning_mapper.cle.models import ConceptInput
+from meaning_mapper.errors import QuarantineReason
+
+client = CLEClient("http://localhost:8300")
+
+# Semantic Grounding of a real Observation. `goal` is always caller-supplied
+# — no ecosystem component currently produces one, and none is fabricated
+# here (see docs/BOUNDARIES.md for why this stays a required parameter).
+result = ground_observation(client, observation, goal="stabilize trajectory")
+if isinstance(result, QuarantineReason):
+    print(result)  # observation itself was unusable; CLE was never called
+else:
+    print(result.observation_id, result.grounded.semantic_state.sok)
+
+# Or: feed a real MeaningMeasurement's theta into CLE's /lift directly.
+measurement_result = map_observation(observation)
+if measurement_result.is_valid:
+    lift = client.lift(ConceptInput.from_measurement(measurement_result.measurement))
+```
+
+`CLEClient` covers CLE's full HTTP surface: `health`, `ground`, `lift`,
+`pullback`, `recover`, `compress` — verified against CLE's own live
+`/openapi.json`, not assumed. See
+[`src/meaning_mapper/cle/`](src/meaning_mapper/cle/) and
+[`docs/BOUNDARIES.md`](docs/BOUNDARIES.md) for the full contract and boundary.
 
 ## Quick start
 
@@ -100,16 +143,17 @@ Meaning Mapper (this repo)                            <- OSS / free
     Validation -> Metric Tensor -> Local Frame -> Density
         -> Covariance -> Semantic Projection -> Topology -> Measurement
         |
-        v
-MeaningMeasurement
-        |
-        v
-Meaning Space Runtime (RFC-MSR01)                     <- OSS / free
-        |
-        v
-StabilizedTrajectory
-        |
-        v
+        +--------------------------------------------+
+        v                                            v
+MeaningMeasurement                    meaning_mapper.cle (this repo's
+        |                              HTTP adapter, added 2026-08-12)
+        v                                            |
+Meaning Space Runtime (RFC-MSR01)     <- OSS / free   v
+        |                                   Categorical Lift Engine
+        v                                   (separate repository)  <- Pro
+StabilizedTrajectory                                  |
+        |                                              v
+        v                                        GroundedState / LiftResult
 Categorical Lift Engine (separate repository)         <- Pro
         |
         v
@@ -119,10 +163,18 @@ Concept
 HEKB                                                  <- Enterprise: HEKB Cloud
 ```
 
-Meaning Mapper does not import `semantic-annotator-core` or `msr`. Every
-crossing is a structural port (a plain `Mapping`/dataclass shape), matching
-RFC-MSR01 Section 4 — the same convention MSR itself uses at every boundary,
-including the MSR/CLE crossing above.
+The right-hand path is new (2026-08-12): `meaning_mapper.cle.grounding.
+ground_observation` sends the *original HEXT Observation's text* to CLE's
+`/ground`; `ConceptInput.from_measurement` sends the *measured*
+`MeaningMeasurement.theta` to CLE's `/lift`. Both are additive — neither
+replaces the existing MSR path on the left, and MSR/StabilizedTrajectory
+are unaffected.
+
+Meaning Mapper does not import `semantic-annotator-core`, `msr`, or CLE's
+own `cle` Python package. Every crossing is a structural port (a plain
+`Mapping`/dataclass shape) or, for the new CLE adapter, a plain HTTP call —
+matching RFC-MSR01 Section 4, the same convention MSR itself uses at every
+boundary, including the MSR/CLE crossing above.
 
 ## Semantic Projection, not Categorical Lift
 

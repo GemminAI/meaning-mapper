@@ -77,12 +77,27 @@ generation are different products, not just different modules. See
 - Evolve runtime meaning-space state (MSR's job)
 - Issue control decisions (NVS-Kernel's job)
 
-Do not add a `cle/`, `categorical-lift/`, or "CLE Engine" module to *this*
-repository. `src/meaning_mapper/projection/semantic_projection.py` is
-Semantic Projection — a fixed, non-extensible geometric step that produces
+Do not add a categorical-theory *implementation* (functors, pullbacks, or
+any of CLE's own algorithms) to *this* repository.
+`src/meaning_mapper/projection/semantic_projection.py` is Semantic
+Projection — a fixed, non-extensible geometric step that produces
 `theta` — and is deliberately not designed as a seam toward functors,
 pullbacks, or other categorical-theory machinery. That extensibility now
 belongs entirely to CLE, in its own repository.
+
+**`meaning_mapper.cle` (added 2026-08-12) is not that module.** It is an
+HTTP-only *client* to CLE's independent service — `client.py`
+(`CLEClient`, one method per CLE endpoint), `models.py` (wire-format
+dataclasses, hand-kept in sync with CLE's own OpenAPI schema), and
+`grounding.py` (`ground_observation`: HEXT Observation → CLE `/ground`,
+preserving the source Observation's identity/provenance alongside CLE's
+response). It reimplements no CLE algorithm — every method builds a
+request, sends it over HTTP, and parses the response. This does not
+revise the "no cle/ module" decision above: no `import cle` (CLE's own
+Python package) exists anywhere in this repository; `meaning_mapper.cle`
+is this repository's *own* adapter code, the same relationship
+`meaning_mapper.types.HEXTObservation` already has to
+`semantic-annotator-core` — a structural port, not a shared dependency.
 
 ## Ecosystem responsibility table
 

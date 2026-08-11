@@ -1,5 +1,51 @@
 # Changelog
 
+## 2.3.0 — 2026-08-12
+
+### `meaning_mapper.cle`: HTTP adapter to the independent CLE service
+
+A new subpackage — `client.py`, `models.py`, `errors.py`, `grounding.py` —
+adds an HTTP-only client to Categorical Lift Engine (CLE)'s API
+(`health`, `ground`, `lift`, `pullback`, `recover`, `compress`), verified
+against CLE's own live `/openapi.json`, not assumed. This does not revise
+`docs/BOUNDARIES.md`'s "CLE is independent, do not embed its algorithms
+here" decision (2.1.0, below) — no CLE algorithm is reimplemented; every
+adapter method builds a request, sends it, and parses the response.
+
+- **`grounding.py`**: `ground_observation()` bridges a real HEXT
+  Observation to CLE's `/ground`, reusing the existing, unmodified
+  `validate_observation()` (a malformed Observation quarantines exactly as
+  it already does for measurement — no new failure mode invented).
+  `text`/`metadata`/`timestamp_ns`/`provenance`/`state_hash`/
+  `observation_id` are carried through unmodified; nothing is inferred
+  that the Observation does not actually carry. `goal` is a required,
+  explicit, caller-supplied parameter — HEXT Observations have no `goal`
+  field in their real wire format, and none is derived from `text` or
+  fabricated. `GroundedObservation` (the result) ties CLE's response back
+  to the source Observation's own identity/provenance and is a distinct
+  type from `MeaningMeasurement`, never merged with it.
+- **`ConceptInput.from_measurement()`**: the explicit, named connection
+  between a real `MeaningMeasurement.theta` and CLE's `/lift`. Reads
+  `.theta` only — `.sigma`/`.density`/`.provenance` are not carried into
+  CLE, since `ConceptInput` has no fields for them.
+- Three typed failure modes throughout the adapter — `CLEUnreachableError`
+  (network/timeout), `CLEHTTPError` (4xx/5xx, carries `status_code`), and
+  `CLESchemaError` (a 200 response missing a required field) — never one
+  bare exception, and never silently reinterpreted as a `QuarantineReason`
+  (quarantine stays reserved for the Observation itself being unusable).
+- The existing measurement pipeline (`pipeline.py`, `types.py`, every
+  stage module) is unchanged. `legacy/rfc-sa-annotation-service/` is
+  unchanged and unused.
+- New dependency: `httpx>=0.27` (this repository's only other dependency
+  remains `numpy`; no pydantic introduced — `cle/models.py` uses the same
+  `@dataclass(frozen=True, slots=True)` convention as the rest of this
+  repository).
+- 48 new tests (146 total, was 98), 100% line + branch coverage maintained,
+  ruff clean, mypy --strict clean. Includes live integration tests against
+  a real running CLE service for all 6 endpoints (not mocks alone), and a
+  live end-to-end test of the real, unmodified measurement pipeline's
+  output flowing into a real CLE `/lift` call.
+
 ## 2.2.0 — 2026-08-04
 
 ### RFC-MM001–005 v2 conformance pass
