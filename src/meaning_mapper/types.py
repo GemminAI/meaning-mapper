@@ -42,6 +42,7 @@ class ValidatedObservation:
     timestamp_ns: int
     raw_features: FloatArray = field(repr=False, compare=False)
     provenance: tuple[str, ...] = field(default_factory=tuple)
+    temporal_context: dict[str, Any] | None = None
 
     @property
     def feature_dim(self) -> int:

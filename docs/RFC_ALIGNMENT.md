@@ -160,3 +160,28 @@ mutable reference to ABI state.
 pytest 98 passed, 100% line + branch coverage, `ruff check`/`ruff format
 --check` clean, `mypy --strict` clean (24 source files). See `CHANGELOG.md`
 for the version this shipped in.
+
+## 8. Temporal context and the time-aware guard (additive; not in RFC-MM001v2-005v2)
+
+Two additions, neither of which changes what is measured or any existing output:
+
+**Declared temporal context.** `semantic.metadata.time_frame` -- a JSON object, the T06
+`time_frame` of the annotation standard (absolute / relative / actor / historical / future)
+-- is carried onto `MeaningMeasurement.temporal_context` and out through `as_dict()`.
+It is *excluded* from the hashed features, so `theta`, `sigma`, `density` and
+`measurement_id` are identical with or without it; it is covered by `provenance_hash`
+(mixed in only when present, so every measurement without one keeps its previous hash).
+Only its shape is validated (a JSON object, string keys, finite JSON values); whether the
+dates are right, and which role each plays, is the annotator's responsibility. A malformed
+value is quarantined at validation. `ValidatedObservation.metadata` is left whole so
+`meaning_mapper.cle.grounding` keeps forwarding it unmodified.
+
+**Time-aware Non-Discontinuity Guard.** RFC-MM004v2 SS4 judges the jump
+`||theta_t - theta_(t-1)||` against a fixed `Delta_max` and has no notion of time. When the
+caller passes `previous_timestamp_ns` **and** an explicit `discontinuity_rate_max`, the jump
+is judged as a rate (theta units per second over the elapsed time). There is no default
+`rate_max`: no numeric bound is specified anywhere, so none is invented. Passing neither
+keeps SS4 exactly. Edge cases: `dt < 0` is quarantined (not in time order); `dt == 0` has no
+rate and falls back to the displacement rule. `timestamp_ns` here is the observation's
+seal time (`final_seal.sealed_at`), i.e. the *observation* clock -- the subject's and
+historical times are what `temporal_context` carries, not what orders measurements.

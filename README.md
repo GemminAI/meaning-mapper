@@ -61,6 +61,15 @@ Pullback, Recovery, or Compression either — `meaning_mapper.cle` (below)
 only calls CLE's independent HTTP service for those; it reimplements none
 of them.
 
+## Time
+
+`timestamp_ns` is the observation clock (the HEXT seal time). A declared
+`semantic.metadata.time_frame` (subject / historical / relative times) is carried onto the
+measurement as `temporal_context` and is never measured; extracting it from text belongs
+to the annotator. The Non-Discontinuity Guard can opt in to judging a jump as a rate over
+the elapsed time (`previous_timestamp_ns` + `discontinuity_rate_max`). See
+[`docs/RFC_ALIGNMENT.md`](docs/RFC_ALIGNMENT.md) SS8.
+
 ## CLE Adapter (`meaning_mapper.cle`)
 
 An HTTP-only client to CLE, the independent Categorical Lift Engine

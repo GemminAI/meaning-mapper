@@ -13,6 +13,13 @@ theta itself. A caller that owns an observation stream (e.g. MSR, which
 already assembles trajectories) MAY pass the previous measurement's theta
 in explicitly; if it does not, the guard is simply not evaluated. See
 ``docs/RFC_ALIGNMENT.md`` for the boundary rationale.
+
+``check_discontinuity_over_time`` is the opt-in, time-aware form of the same
+guard: a jump of a given size is judged against the time that actually elapsed
+between the two measurements (a rate), so a large but legitimate move across a
+large gap is not mistaken for an artifact. It is equally stateless -- the caller
+passes the previous timestamp in alongside the previous theta -- and it has no
+default threshold: no numeric rate bound is specified anywhere, so none is invented.
 """
 
 from __future__ import annotations
@@ -100,6 +107,59 @@ def check_discontinuity(
     if jump > delta_max:
         detail = (
             f"discontinuous jump ||theta_t - theta_(t-1)|| = {jump!r} > delta_max = {delta_max!r}"
+        )
+        return _quarantine(QuarantineStage.SEMANTIC_PROJECTION, detail, observation_id)
+    return None
+
+
+def check_discontinuity_over_time(
+    theta: tuple[float, ...],
+    previous_theta: tuple[float, ...] | None,
+    *,
+    timestamp_ns: int,
+    previous_timestamp_ns: int,
+    rate_max: float,
+    delta_max: float = THETA_DISCONTINUITY_MAX,
+    observation_id: str | None = None,
+) -> QuarantineReason | None:
+    """Time-aware Non-Discontinuity Guard: quarantine when
+    ``||theta_t - theta_(t-1)||_2 / dt > rate_max`` (theta units per second).
+
+    ``dt`` is ``(timestamp_ns - previous_timestamp_ns)`` in seconds. Purely a
+    function of its arguments, like :func:`check_discontinuity`.
+
+    - no ``previous_theta``: no-op (``None``).
+    - ``dt < 0``: quarantined -- the previous measurement is later than this one,
+      so no rate exists and the pair is not in observation order.
+    - ``dt == 0``: no rate exists (two observations sealed within the same clock
+      tick), so this falls back to the displacement rule of
+      :func:`check_discontinuity` with ``delta_max`` rather than inventing a speed.
+    """
+    if previous_theta is None:
+        return None
+    if len(previous_theta) != len(theta):
+        return _quarantine(
+            QuarantineStage.SEMANTIC_PROJECTION,
+            "previous_theta dimension does not match theta",
+            observation_id,
+        )
+    elapsed_ns = timestamp_ns - previous_timestamp_ns
+    if elapsed_ns < 0:
+        detail = (
+            f"previous_timestamp_ns {previous_timestamp_ns!r} is later than "
+            f"timestamp_ns {timestamp_ns!r}: observations are not in time order"
+        )
+        return _quarantine(QuarantineStage.SEMANTIC_PROJECTION, detail, observation_id)
+    if elapsed_ns == 0:
+        return check_discontinuity(
+            theta, previous_theta, delta_max=delta_max, observation_id=observation_id
+        )
+    jump = float(np.linalg.norm(np.asarray(theta) - np.asarray(previous_theta)))
+    rate = jump / (elapsed_ns / 1e9)
+    if rate > rate_max:
+        detail = (
+            f"discontinuous rate ||theta_t - theta_(t-1)|| / dt = {rate!r} per second "
+            f"> rate_max = {rate_max!r} (jump {jump!r} over {elapsed_ns / 1e9!r} s)"
         )
         return _quarantine(QuarantineStage.SEMANTIC_PROJECTION, detail, observation_id)
     return None

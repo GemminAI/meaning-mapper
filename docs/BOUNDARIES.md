@@ -20,6 +20,10 @@ neighbor owns it.
 - Semantic Projection (placing raw features in the local frame to get `theta`)
 - Topological Consistency Check
 - Generating a MeaningMeasurement
+- Carrying a HEXT Observation's *declared* temporal context (`semantic.metadata.time_frame`)
+  onto the MeaningMeasurement unchanged, as a separate field that is never measured
+- A stateless, opt-in, time-aware Non-Discontinuity Guard (the caller passes the previous
+  timestamp; nothing is remembered)
 
 **Must not**
 
@@ -39,6 +43,8 @@ neighbor owns it.
 - Call an LLM
 - Generate prompts
 - Render language
+- Extract, normalize or interpret time expressions in text, or decide which role a time plays
+  (subject / observation / historical) -- that is annotation, upstream of this repository
 
 Meaning Mapper is a measurement instrument: it produces one
 position-plus-uncertainty reading (`theta`, `sigma`) per observation and

@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Temporal context and a time-aware discontinuity guard (additive)
+
+- `MeaningMeasurement.temporal_context`: the HEXT Observation's declared
+  `semantic.metadata.time_frame` is carried through unchanged and never measured
+  (excluded from the hashed features; `theta`/`sigma`/`density`/`measurement_id`
+  unaffected; integrity-covered by `provenance_hash` only when present).
+  Malformed values are quarantined at validation.
+- `process()` / `map_observation()`: optional `previous_timestamp_ns` and
+  `discontinuity_rate_max` make the Non-Discontinuity Guard judge the jump as a rate
+  over the elapsed time. No default bound; omitting either keeps RFC-MM004v2 SS4.
+- `check_discontinuity_over_time()` (pure function) behind it.
+- Tests: 146 -> 165, still 100% line + branch coverage. See `docs/RFC_ALIGNMENT.md` SS8.
+
 ## 2.3.0 — 2026-08-12
 
 ### `meaning_mapper.cle`: HTTP adapter to the independent CLE service

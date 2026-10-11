@@ -33,4 +33,10 @@ THETA_BOUND_SCALE = 50.0
 # bound rather than an arbitrary unrelated constant.
 THETA_DISCONTINUITY_MAX = 10.0
 
+# Reserved ``semantic.metadata`` key that carries the declared temporal context
+# (T06 ``time_frame``: absolute / relative / actor / historical / future). Meaning
+# Mapper carries it through unchanged and never measures it: it is excluded from
+# the hashed features, so theta/sigma/density are identical with or without it.
+TEMPORAL_CONTEXT_KEY = "time_frame"
+
 DEFAULT_FRAME_ID = "meaning-mapper.default"

@@ -18,7 +18,9 @@ including why ``betti_numbers`` (RFC-MM002 v2 SS2.3) is intentionally absent.
 
 from __future__ import annotations
 
+import copy
 import hashlib
+import json
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -49,7 +51,12 @@ def _measurement_id(observation_id: str, frame_id: str, timestamp_ns: int) -> st
 
 
 def _provenance_hash(
-    observation_id: str, frame_id: str, theta: Vector, sigma: Matrix, timestamp_ns: int
+    observation_id: str,
+    frame_id: str,
+    theta: Vector,
+    sigma: Matrix,
+    timestamp_ns: int,
+    temporal_context: dict[str, Any] | None = None,
 ) -> str:
     """SHA-256 integrity hash over the measurement's own defining fields.
 
@@ -64,6 +71,12 @@ def _provenance_hash(
     digest.update(repr(theta).encode("utf-8"))
     digest.update(repr(sigma).encode("utf-8"))
     digest.update(str(timestamp_ns).encode("utf-8"))
+    if temporal_context is not None:
+        # Only mixed in when present, so every measurement without a declared
+        # temporal context keeps exactly the hash it had before this field existed.
+        digest.update(b"|temporal_context|")
+        canonical = json.dumps(temporal_context, sort_keys=True, separators=(",", ":"))
+        digest.update(canonical.encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -78,12 +91,18 @@ class MeaningMeasurement:
     timestamp_ns: int
     density: float
     provenance: tuple[str, ...] = field(default_factory=tuple)
+    # The declared temporal context (T06 time_frame) exactly as the HEXT Observation
+    # carried it: carried, never measured -- theta/sigma/density do not depend on it.
+    # Excluded from __hash__ (a dict is unhashable) but still part of equality.
+    temporal_context: dict[str, Any] | None = field(default=None, hash=False)
     measurement_id: str = field(default="", init=False)
     provenance_hash: str = field(default="", init=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "theta", to_vector_tuple(self.theta))
         object.__setattr__(self, "sigma", freeze_matrix(self.sigma))
+        if self.temporal_context is not None:
+            object.__setattr__(self, "temporal_context", copy.deepcopy(self.temporal_context))
         object.__setattr__(
             self,
             "measurement_id",
@@ -93,7 +112,12 @@ class MeaningMeasurement:
             self,
             "provenance_hash",
             _provenance_hash(
-                self.observation_id, self.frame_id, self.theta, self.sigma, self.timestamp_ns
+                self.observation_id,
+                self.frame_id,
+                self.theta,
+                self.sigma,
+                self.timestamp_ns,
+                self.temporal_context,
             ),
         )
 
@@ -114,7 +138,7 @@ class MeaningMeasurement:
 
     def as_dict(self) -> dict[str, Any]:
         """The plain payload MSR's structural port (mapper adapter) accepts."""
-        return {
+        payload: dict[str, Any] = {
             "measurement_id": self.measurement_id,
             "observation_id": self.observation_id,
             "frame_id": self.frame_id,
@@ -125,3 +149,6 @@ class MeaningMeasurement:
             "provenance": list(self.provenance),
             "provenance_hash": self.provenance_hash,
         }
+        if self.temporal_context is not None:
+            payload["temporal_context"] = copy.deepcopy(self.temporal_context)
+        return payload

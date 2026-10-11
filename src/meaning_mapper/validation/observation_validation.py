@@ -8,9 +8,12 @@ Estimation.
 
 from __future__ import annotations
 
+import copy
+import json
 from datetime import datetime
 from typing import Any
 
+from meaning_mapper._constants import TEMPORAL_CONTEXT_KEY
 from meaning_mapper._features import raw_features
 from meaning_mapper.errors import QuarantineReason, QuarantineStage
 from meaning_mapper.types import HEXTObservation, ValidatedObservation
@@ -43,6 +46,32 @@ def _timestamp_ns(final_seal: dict[str, Any] | None, ledger: Any) -> int | None:
             if isinstance(seconds, int):
                 return seconds * 1_000_000_000
     return None
+
+
+def _temporal_context(
+    metadata: dict[str, Any], observation_id: str
+) -> dict[str, Any] | None | QuarantineReason:
+    """The declared ``time_frame`` (a JSON object), ``None`` if absent, or a quarantine.
+
+    Only the *shape* is checked -- a mapping with string keys and JSON-serializable,
+    finite values. Meaning Mapper does not interpret, normalize or validate the
+    meaning of the dates (that is the annotator's job, not a measurement).
+    """
+    if TEMPORAL_CONTEXT_KEY not in metadata:
+        return None
+    value = metadata[TEMPORAL_CONTEXT_KEY]
+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
+        return _quarantine(
+            f"'semantic.metadata.{TEMPORAL_CONTEXT_KEY}' must be a JSON object", observation_id
+        )
+    try:
+        json.dumps(value, allow_nan=False)
+    except (TypeError, ValueError):
+        return _quarantine(
+            f"'semantic.metadata.{TEMPORAL_CONTEXT_KEY}' must hold only finite JSON values",
+            observation_id,
+        )
+    return copy.deepcopy(value)
 
 
 def _provenance(provenance_section: dict[str, Any] | None) -> tuple[str, ...]:
@@ -97,7 +126,15 @@ def validate_observation(
     metadata_raw = semantic_section.get("metadata") if semantic_section is not None else None
     metadata: dict[str, Any] = metadata_raw if isinstance(metadata_raw, dict) else {}
 
+    temporal_context = _temporal_context(metadata, observation_id)
+    if isinstance(temporal_context, QuarantineReason):
+        return temporal_context
+
     provenance = _provenance(_section(observation, "provenance"))
+    # The declared temporal context is carried, never measured: it is left out of the
+    # hashed features so theta/sigma/density cannot depend on it. `metadata` itself is
+    # kept whole, so consumers that forward it unmodified (cle.grounding) still see it.
+    feature_metadata = {k: v for k, v in metadata.items() if k != TEMPORAL_CONTEXT_KEY}
 
     return ValidatedObservation(
         observation_id=observation_id,
@@ -105,6 +142,7 @@ def validate_observation(
         metadata=metadata,
         content_hash=content_hash,
         timestamp_ns=timestamp_ns,
-        raw_features=raw_features(text, metadata),
+        raw_features=raw_features(text, feature_metadata),
         provenance=provenance,
+        temporal_context=temporal_context,
     )
