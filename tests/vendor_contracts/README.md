@@ -1,6 +1,7 @@
 # vendor_contracts
 
 正本は sensos の `docs/architecture/contracts/nvs/meaning-measurement.schema.json`。
+frame の正本は `docs/architecture/contracts/nvs/meaning-frame.schema.json`。
 blob の正本は `docs/architecture/contracts/common/blob.schema.json`。
 commit とハッシュの形は `LOCK.json` に書いてある。
 

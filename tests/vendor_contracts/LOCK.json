@@ -10,6 +10,14 @@
    "commit": "3738bda2e1069a22188e3043ca9164287f189e0f",
    "path": "docs/architecture/contracts/nvs/meaning-measurement.schema.json"
   },
+  "meaning-frame.schema.json": {
+   "source_sha256": "6ddd41593c540999b94bfd6807b92c6c8422cf22fd17cdfb0991cab26a705d6b",
+   "vendored_sha256": "6ddd41593c540999b94bfd6807b92c6c8422cf22fd17cdfb0991cab26a705d6b",
+   "repo": "sensos",
+   "branch": "feature/gate-meaning-frame",
+   "commit": "2673f8e343228fed2d9f7ca8822fbd1939857beb",
+   "path": "docs/architecture/contracts/nvs/meaning-frame.schema.json"
+  },
   "common/blob.schema.json": {
    "source_sha256": "f17c53bba3b8df0b7755717dd02951c20285aaaf0e13eceb4877ed8925d6a952",
    "vendored_sha256": "f17c53bba3b8df0b7755717dd02951c20285aaaf0e13eceb4877ed8925d6a952",

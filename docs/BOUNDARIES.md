@@ -130,8 +130,9 @@ field-for-field structurally identical to `msr.abi.MeaningMeasurement` and
 but is Meaning Mapper's own type. This mirrors RFC-MSR01 Section 4: "any
 object satisfying a port's shape MAY be bound" — the contract is a shape, not
 a shared dependency, and the same convention applies at the MSR/CLE boundary.
-The envelope builder (`meaning_mapper.envelope`) only assembles an
-`nvs.meaning-measurement` envelope. It does not compute the measurement.
+The envelope builder (`meaning_mapper.envelope`) assembles an
+`nvs.meaning-measurement` envelope and an `nvs.meaning-frame` envelope.
+Meaning Mapper is the producer of the frame artifact. It does not compute the measurement.
 It uses the `seal` the caller passes and does not import sensos.
 When a token axis is given, the caller also passes that observation.
 Window measurement (`meaning_mapper.window`) is a separate function. The existing
