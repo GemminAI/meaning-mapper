@@ -8,6 +8,7 @@ is the caller's ``seal(envelope, lookup)``.
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, cast
@@ -35,6 +36,7 @@ FLOAT_BLOB_REASON = (
 _PLACEHOLDER_CONTENT = "cnt:" + "0" * 64
 _PLACEHOLDER_ARTIFACT = "art:" + "0" * 64
 _MAX_SAFE = 2**53 - 1
+_FRAME_ID = re.compile(r"^frame:sha256:[0-9a-f]{64}$")
 _SHORT = {'"': '\\"', "\\": "\\\\", "\b": "\\b", "\f": "\\f", "\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 FloatArray = NDArray[np.float64]
@@ -78,8 +80,8 @@ def build_measurement_artifact(
     ``observation_envelope`` is required. The same arguments produce the same
     envelope: nothing here reads a clock or a random source.
     """
-    if not isinstance(frame_id, str) or not frame_id:
-        raise MeasurementInputError("frame_id", "must be a non-empty string")
+    if not isinstance(frame_id, str) or _FRAME_ID.fullmatch(frame_id) is None:
+        raise MeasurementInputError("frame_id", "must be frame:sha256: and 64 lowercase hex digits")
     if not isinstance(producer_build, str) or not producer_build:
         raise MeasurementInputError("producer_build", "must be a non-empty string")
     _require_window(window_envelope)

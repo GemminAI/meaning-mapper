@@ -13,10 +13,19 @@ A frame is `(frame_id, μ, B, Σ0)`.
 - `Σ0` is `d × d` and symmetric positive definite (`is_spd`).
 - `d` is the number of rows of `B`. Meaning Mapper does not choose it.
 
-`frame_id` names the frame. Omit it and the value is `frame_content_id(μ, B, Σ0)`.
-A supplied `frame_id` is kept as a name when it differs from that id. It is not checked.
+`frame_id` is the content address of `(μ, B, Σ0)`: `frame:sha256:` plus the
+SHA-256 hex of the bytes below. `WindowFrame` computes it. A caller does not
+pass a name.
 
-`frame_content_id` is the SHA-256 hex of these bytes, in order:
+MSR distinguishes frames by that string. `ingest` raises `FrameMismatch` when
+`measurement.frame_id` is not the runtime's `frame_id` (`src/msr/runtime.py`).
+The same string is the same frame, so a free name would let two different
+frames share an id.
+
+This is separate from the HEXT pipeline's default `meaning-mapper.default`
+(`DEFAULT_FRAME_ID`). That path is unchanged. A window frame does not use it.
+
+`frame_content_id` hashes these bytes, in order:
 
 ```text
 meaning-mapper.window-frame/1\n

@@ -29,14 +29,11 @@ def _frame(
     mu: Any = None,
     basis: Any = None,
     sigma0: Any = None,
-    frame_id: str | None = None,
 ) -> WindowFrame:
     held_mu = np.array([1.0, 1.0]) if mu is None else mu
     held_basis = np.array([[1.0, 1.0], [1.0, -1.0]]) if basis is None else basis
     held_sigma0 = np.array([[2.0, 0.0], [0.0, 2.0]]) if sigma0 is None else sigma0
-    if frame_id is None:
-        return WindowFrame(mu=held_mu, basis=held_basis, sigma0=held_sigma0)
-    return WindowFrame(mu=held_mu, basis=held_basis, sigma0=held_sigma0, frame_id=frame_id)
+    return WindowFrame(mu=held_mu, basis=held_basis, sigma0=held_sigma0)
 
 
 def _rows() -> np.ndarray[Any, np.dtype[np.float64]]:
@@ -104,18 +101,20 @@ def test_two_calls_match_byte_for_byte() -> None:
     assert first.density.tobytes() == second.density.tobytes()
 
 
-def test_an_omitted_frame_id_is_the_content_id_and_a_name_is_kept() -> None:
+def test_the_frame_id_is_the_content_address() -> None:
     mu = np.array([1.0, 2.0])
     basis = np.eye(2)
     sigma0 = np.eye(2) * 0.5
     frame = _frame(mu=mu, basis=basis, sigma0=sigma0)
     assert frame.frame_id == frame_content_id(mu, basis, sigma0)
-    assert frame_content_id(mu, basis, sigma0) == frame_content_id(mu, basis, sigma0)
-    named = _frame(mu=mu, basis=basis, sigma0=sigma0, frame_id="other")
-    assert named.frame_id == "other"
+    assert frame.frame_id.startswith("frame:sha256:")
+    assert len(frame.frame_id) == len("frame:sha256:") + 64
+    assert WindowFrame(mu=mu, basis=basis, sigma0=sigma0).frame_id == frame.frame_id
     changed = mu.copy()
     changed[0] = 9.0
     assert frame_content_id(changed, basis, sigma0) != frame.frame_id
+    with pytest.raises(TypeError):
+        WindowFrame(mu, basis, sigma0, frame_id="other")  # type: ignore[call-arg]
     wide = np.array([[1.0, 2.0, 3.0, 4.0]])
     assert frame_content_id(wide.reshape(4), np.eye(1), np.eye(1)) != frame_content_id(
         wide.reshape(1, 4), np.eye(1), np.eye(1)
@@ -136,8 +135,6 @@ def test_the_frame_refuses_a_bad_input() -> None:
     _refuses("sigma0", lambda: _frame(sigma0=np.ones((2, 3))))
     _refuses("sigma0", lambda: _frame(sigma0=np.array([[1.0, 1.0], [0.0, 1.0]])))
     _refuses("sigma0", lambda: _frame(sigma0=np.zeros((2, 2))))
-    _refuses("frame_id", lambda: _frame(frame_id=""))
-    _refuses("frame_id", lambda: WindowFrame(np.zeros(2), np.eye(2), np.eye(2), frame_id=1))  # type: ignore[arg-type]
     _refuses("mu", lambda: frame_content_id("no", np.eye(2), np.eye(2)))
 
 

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -41,14 +41,14 @@ class WindowMeasureError(Exception):
 class WindowFrame:
     """``(frame_id, μ, B, Σ0)``. ``d`` is the number of rows of ``B``.
 
-    Omit ``frame_id`` to use :func:`frame_content_id`. A supplied id is kept
-    even when it differs from the content id: it is a name, not a check.
+    ``frame_id`` is :func:`frame_content_id` of these three arrays. A caller
+    does not pass a name.
     """
 
     mu: FloatArray
     basis: FloatArray
     sigma0: FloatArray
-    frame_id: str | None = None
+    frame_id: str = field(init=False)
 
     def __post_init__(self) -> None:
         mu = _floats("mu", self.mu, 1)
@@ -66,10 +66,7 @@ class WindowFrame:
         object.__setattr__(self, "mu", mu)
         object.__setattr__(self, "basis", basis)
         object.__setattr__(self, "sigma0", sigma0)
-        if self.frame_id is None:
-            object.__setattr__(self, "frame_id", frame_content_id(mu, basis, sigma0))
-        elif not isinstance(self.frame_id, str) or not self.frame_id:
-            raise WindowMeasureError("frame_id", "omit it, or pass a non-empty string")
+        object.__setattr__(self, "frame_id", frame_content_id(mu, basis, sigma0))
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,13 +79,14 @@ class WindowMeasurement:
 
 
 def frame_content_id(mu: Any, basis: Any, sigma0: Any) -> str:
-    """SHA-256 hex of the frame bytes. Usable as ``frame_id``.
+    """``frame:sha256:`` plus the SHA-256 hex of the frame bytes.
 
-    The hashed bytes are the domain ``meaning-mapper.window-frame/1``, then
-    each array's name, rank, and shape, then that array as little-endian
+    The hashed bytes are unchanged: the domain ``meaning-mapper.window-frame/1``,
+    then each array's name, rank, and shape, then that array as little-endian
     C-order float64. See ``docs/WINDOW_MEASUREMENT.md``.
     """
-    return hashlib.sha256(_content_bytes(mu, basis, sigma0)).hexdigest()
+    digest = hashlib.sha256(_content_bytes(mu, basis, sigma0)).hexdigest()
+    return "frame:sha256:" + digest
 
 
 def window_rows(window_envelope: Mapping[str, Any], blobs: Mapping[str, bytes]) -> FloatArray:

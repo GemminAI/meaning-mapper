@@ -26,6 +26,7 @@ _OBS = "art:" + "1" * 64
 _WINDOW = "art:" + "a" * 64
 _AXIS = "art:" + "b" * 64
 _D = 2
+_FRAME = "frame:sha256:" + "c" * 64
 
 
 def _seal(envelope: dict[str, Any], lookup: dict[str, Any]) -> dict[str, Any]:
@@ -123,7 +124,7 @@ def _build(
     theta: Any = None,
     sigma: Any = None,
     density: Any = None,
-    frame_id: str = "frame-1",
+    frame_id: str = _FRAME,
     producer_build: str = "mm-1",
     observation: Mapping[str, Any] | None = None,
     supply_observation: bool = True,
@@ -300,7 +301,7 @@ def _refusal(change: str) -> dict[str, Any]:
     window = _window()
     theta, sigma, density = _values(1)
     points: Any = [{"start": 0, "length": 4}]
-    frame_id = "frame-1"
+    frame_id = _FRAME
     producer_build = "mm-1"
     if change == "frame":
         frame_id = ""
@@ -378,6 +379,18 @@ def _refusal(change: str) -> dict[str, Any]:
         "frame_id": frame_id,
         "producer_build": producer_build,
     }
+
+
+def test_a_free_frame_id_is_refused() -> None:
+    for frame_id in (
+        "f",
+        "frame:sha256:" + "AB" * 32,
+        "frame:sha256:" + "a" * 63,
+        "id:sha256:" + "a" * 64,
+    ):
+        with pytest.raises(MeasurementInputError) as caught:
+            _build(frame_id=frame_id)
+        assert caught.value.field == "frame_id"
 
 
 def test_an_axis_requires_the_observation() -> None:
