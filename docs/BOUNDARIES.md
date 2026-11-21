@@ -133,3 +133,4 @@ a shared dependency, and the same convention applies at the MSR/CLE boundary.
 The envelope builder (`meaning_mapper.envelope`) only assembles an
 `nvs.meaning-measurement` envelope. It does not compute the measurement.
 It uses the `seal` the caller passes and does not import sensos.
+When a token axis is given, the caller also passes that observation.

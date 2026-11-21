@@ -89,6 +89,22 @@ def _axis(
     }
 
 
+def _observation(
+    artifact_id: str = _OBS,
+    *,
+    alignment: str | None = "decides-next/1",
+    binding: bool = True,
+) -> dict[str, Any]:
+    if not binding:
+        return {"artifact_id": artifact_id, "payload": {}}
+    if alignment is None:
+        return {"artifact_id": artifact_id}
+    return {
+        "artifact_id": artifact_id,
+        "payload": {"binding": {"alignment": alignment}},
+    }
+
+
 def _values(n: int, d: int = _D) -> tuple[np.ndarray[Any, np.dtype[np.float64]], ...]:
     theta = np.zeros((n, d), dtype=np.float64)
     sigma = np.zeros((n, d, d), dtype=np.float64)
@@ -109,6 +125,8 @@ def _build(
     density: Any = None,
     frame_id: str = "frame-1",
     producer_build: str = "mm-1",
+    observation: Mapping[str, Any] | None = None,
+    supply_observation: bool = True,
 ) -> Any:
     held = _window(length=max(n, 1)) if window is None else window
     if points is None:
@@ -127,6 +145,7 @@ def _build(
         arrays[2] if density is None else density,
         producer_build,
         _seal,
+        None if axis is None or not supply_observation else observation or _observation(),
     )
 
 
@@ -172,7 +191,10 @@ def test_the_envelope_copies_the_window_and_follows_seq() -> None:
     assert [item["role"] for item in envelope["parents"]] == ["source_window", "token_axis"]
     assert all(item["ordered"] is False for item in envelope["parents"])
     assert envelope["extensions"]["x-sensos-float-blob"].endswith("(S25)")
-    assert set(artifact.stored_parents) == {_WINDOW, _AXIS}
+    assert set(artifact.stored_parents) == {_WINDOW, _AXIS, _OBS}
+    assert artifact.stored_parents[_OBS]["envelope"]["payload"]["binding"]["alignment"] == (
+        "decides-next/1"
+    )
     assert artifact.lookup[_AXIS]["seq"] == 5
     only = _build(window=window)
     assert only.envelope["seq"] == 3
@@ -356,6 +378,38 @@ def _refusal(change: str) -> dict[str, Any]:
         "frame_id": frame_id,
         "producer_build": producer_build,
     }
+
+
+def test_an_axis_requires_the_observation() -> None:
+    with pytest.raises(MeasurementInputError) as caught:
+        _build(axis=_axis(), supply_observation=False)
+    assert caught.value.field == "observation_envelope"
+    refused = {
+        "artifact_id": _observation(artifact_id="art:" + "9" * 64),
+        "alignment": _observation(alignment="other"),
+        "payload": _observation(alignment=None),
+        "binding": _observation(binding=False),
+    }
+    fields = {
+        "artifact_id": "artifact_id",
+        "alignment": "alignment",
+        "payload": "alignment",
+        "binding": "alignment",
+    }
+    for name, observation in refused.items():
+        with pytest.raises(MeasurementInputError) as caught:
+            _build(axis=_axis(), observation=observation)
+        assert caught.value.field == fields[name], name
+    axis = _axis()
+    axis["producer"] = "sensos-inference"
+    with pytest.raises(MeasurementInputError) as caught:
+        _build(axis=axis)
+    assert caught.value.field == "producer"
+    axis = _axis()
+    axis["producer"]["name"] = "nvs-runtime"
+    with pytest.raises(MeasurementInputError) as caught:
+        _build(axis=axis)
+    assert caught.value.field == "producer"
 
 
 def test_a_token_temporal_that_does_not_match_is_refused() -> None:

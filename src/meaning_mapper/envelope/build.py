@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -23,7 +23,9 @@ IC00_VERSION = "1.1.0"
 PAYLOAD_SCHEMA = {"id": "nvs.meaning-measurement", "version": "0.1.0"}
 WINDOW_SCHEMA = ("msr.trajectory-window", "0.10.0")
 AXIS_SCHEMA = ("nvs.token-temporal", "0.1.0")
+AXIS_PRODUCER = "sensos-inference"
 WINDOW_PRODUCER = "nvs-runtime"
+ALIGNMENT = "decides-next/1"
 PRODUCER_NAME = "meaning-mapper"
 ID_DOMAIN = "nvs.meaning-measurement/1"
 MEDIA_TYPE = "application/vnd.sensos.ndarray-raw"
@@ -68,11 +70,13 @@ def build_measurement_artifact(
     density: Any,
     producer_build: str,
     seal: Seal,
+    observation_envelope: Mapping[str, Any] | None = None,
 ) -> MeasurementArtifact:
     """Seal a measurement of ``points`` on ``window_envelope``.
 
-    ``token_temporal_envelope`` may be omitted. The same arguments produce the
-    same envelope: nothing here reads a clock or a random source.
+    ``token_temporal_envelope`` may be omitted. When it is given,
+    ``observation_envelope`` is required. The same arguments produce the same
+    envelope: nothing here reads a clock or a random source.
     """
     if not isinstance(frame_id, str) or not frame_id:
         raise MeasurementInputError("frame_id", "must be a non-empty string")
@@ -81,7 +85,7 @@ def build_measurement_artifact(
     _require_window(window_envelope)
     parsed = _points(points, _nested_int(window_envelope, ("payload", "window", "length")))
     if token_temporal_envelope is not None:
-        _require_axis(window_envelope, token_temporal_envelope)
+        _require_axis(window_envelope, token_temporal_envelope, observation_envelope)
     count = len(parsed)
     theta_array = _floats("theta", theta)
     if theta_array.ndim != 2 or theta_array.shape[0] != count or int(theta_array.shape[1]) < 1:
@@ -109,7 +113,7 @@ def build_measurement_artifact(
     sealed = dict(seal(dict(envelope), lookup))
     return MeasurementArtifact(
         envelope=sealed,
-        stored_parents=_stored(window_envelope, token_temporal_envelope),
+        stored_parents=_stored(window_envelope, token_temporal_envelope, observation_envelope),
         blobs=blobs,
         lookup=lookup,
     )
@@ -133,8 +137,18 @@ def _require_window(envelope: Mapping[str, Any]) -> None:
         raise MeasurementInputError("space_id", "must be null or a non-empty string")
 
 
-def _require_axis(window: Mapping[str, Any], axis: Mapping[str, Any]) -> None:
+def _require_axis(
+    window: Mapping[str, Any],
+    axis: Mapping[str, Any],
+    observation: Mapping[str, Any] | None,
+) -> Mapping[str, Any]:
     _schema(axis, AXIS_SCHEMA, "the token temporal is not nvs.token-temporal 0.1.0")
+    producer = axis.get("producer")
+    name = producer.get("name") if isinstance(producer, Mapping) else None
+    if name != AXIS_PRODUCER:
+        raise MeasurementInputError(
+            "producer", "the token temporal producer is not sensos-inference"
+        )
     for key in ("artifact_id", "content_id"):
         _text(axis, key)
     _seq(axis)
@@ -147,6 +161,20 @@ def _require_axis(window: Mapping[str, Any], axis: Mapping[str, Any]) -> None:
     origin = _nested_int(window, ("payload", "origin", "length"))
     if origin != _generated_n(axis):
         raise MeasurementInputError("n", "origin.length differs from generated n")
+    if observation is None:
+        raise MeasurementInputError("observation_envelope", "required when a token axis is given")
+    if _parent_id(window) != _text(observation, "artifact_id"):
+        raise MeasurementInputError("artifact_id", "the parents are not this observation")
+    _alignment(observation)
+    return observation
+
+
+def _alignment(observation: Mapping[str, Any]) -> None:
+    payload = observation.get("payload")
+    binding = payload.get("binding") if isinstance(payload, Mapping) else None
+    alignment = binding.get("alignment") if isinstance(binding, Mapping) else None
+    if alignment != ALIGNMENT:
+        raise MeasurementInputError("alignment", f"{alignment!r} is not decides-next/1")
 
 
 def _schema(envelope: Mapping[str, Any], expected: tuple[str, str], detail: str) -> None:
@@ -340,10 +368,13 @@ def _ref(envelope: Mapping[str, Any]) -> dict[str, Any]:
 def _stored(
     window: Mapping[str, Any],
     axis: Mapping[str, Any] | None,
+    observation: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     stored = {window["artifact_id"]: {"envelope": window}}
     if axis is not None:
+        observed = cast(Mapping[str, Any], observation)
         stored[axis["artifact_id"]] = {"envelope": axis}
+        stored[observed["artifact_id"]] = {"envelope": observed}
     return stored
 
 
