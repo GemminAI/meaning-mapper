@@ -1,0 +1,22 @@
+{
+ "source": "sensos docs/architecture/contracts. Byte-for-byte copies for the meaning-measurement tests. The canonical files stay in sensos.",
+ "note": "Same shape as the nvs-runtime vendor LOCK.json. meaning-measurement.schema.json is the 0.1.0 schema whose title says 確定.",
+ "files": {
+  "meaning-measurement.schema.json": {
+   "source_sha256": "b0c44938ad9fef178d6f091a2ed2945508d81552489dbb5d43d76979c49efddb",
+   "vendored_sha256": "b0c44938ad9fef178d6f091a2ed2945508d81552489dbb5d43d76979c49efddb",
+   "repo": "sensos",
+   "branch": "feature/gate-meaning-measurement",
+   "commit": "8227bd17bed4bbab6e6a041525d8fa56cf360ab5",
+   "path": "docs/architecture/contracts/nvs/meaning-measurement.schema.json"
+  },
+  "common/blob.schema.json": {
+   "source_sha256": "f17c53bba3b8df0b7755717dd02951c20285aaaf0e13eceb4877ed8925d6a952",
+   "vendored_sha256": "f17c53bba3b8df0b7755717dd02951c20285aaaf0e13eceb4877ed8925d6a952",
+   "repo": "sensos",
+   "branch": "feature/u6t-gate-verdict",
+   "commit": "13bd95d84f2ee955ca40f7e10607d31e110a9bc1",
+   "path": "docs/architecture/contracts/common/blob.schema.json"
+  }
+ }
+}
