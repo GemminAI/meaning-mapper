@@ -6,7 +6,7 @@
    "source_sha256": "bf4581ab04fbad1198906e2525f24f8d299a7a2a3f6d8d2bb984024fc6afbf10",
    "vendored_sha256": "bf4581ab04fbad1198906e2525f24f8d299a7a2a3f6d8d2bb984024fc6afbf10",
    "repo": "sensos",
-   "branch": "feature/gate-meaning-measurement",
+   "branch": "feature/gate-meaning-frame",
    "commit": "3738bda2e1069a22188e3043ca9164287f189e0f",
    "path": "docs/architecture/contracts/nvs/meaning-measurement.schema.json"
   },
