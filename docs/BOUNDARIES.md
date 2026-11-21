@@ -134,3 +134,5 @@ The envelope builder (`meaning_mapper.envelope`) only assembles an
 `nvs.meaning-measurement` envelope. It does not compute the measurement.
 It uses the `seal` the caller passes and does not import sensos.
 When a token axis is given, the caller also passes that observation.
+Window measurement (`meaning_mapper.window`) is a separate function. The existing
+measurement functions stay as they are. The frame is an input, and Meaning Mapper stays stateless.
