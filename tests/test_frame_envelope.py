@@ -113,3 +113,67 @@ def test_the_same_arguments_seal_the_same_content_id() -> None:
     assert first.envelope["content_id"] == second.envelope["content_id"]
     assert first.envelope == second.envelope
     assert first.blobs == second.blobs
+
+
+def test_a_frame_that_is_not_a_window_frame_is_refused() -> None:
+    with pytest.raises(FrameInputError) as caught:
+        build_frame_artifact(None, _SPACE, "mm-test", _seal, _observation())
+    assert caught.value.field == "frame"
+
+
+def test_an_empty_or_non_string_producer_build_is_refused() -> None:
+    frame = _fixed_frame()
+    for producer_build in ("", None):
+        with pytest.raises(FrameInputError) as caught:
+            build_frame_artifact(frame, _SPACE, producer_build, _seal, _observation())
+        assert caught.value.field == "producer_build"
+
+
+def test_a_frame_id_that_differs_from_the_blob_bytes_is_refused() -> None:
+    frame = _fixed_frame()
+    object.__setattr__(frame, "frame_id", "frame:sha256:" + "0" * 64)
+    with pytest.raises(FrameInputError) as caught:
+        _build(frame)
+    assert caught.value.field == "frame_id"
+
+
+def test_an_observation_envelope_that_is_not_a_mapping_is_refused() -> None:
+    with pytest.raises(FrameInputError) as caught:
+        build_frame_artifact(_fixed_frame(), _SPACE, "mm-test", _seal, ["not-a-mapping"])
+    assert caught.value.field == "observation_envelope"
+
+
+def test_a_session_id_of_the_wrong_form_is_refused() -> None:
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=_observation(session_id="ses:" + "b" * 63))
+    assert caught.value.field == "session_id"
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=_observation(session_id=None))
+    assert caught.value.field == "session_id"
+
+
+def test_an_observation_id_that_is_neither_null_nor_an_obs_id_is_refused() -> None:
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=_observation(observation_id="obs:" + "c" * 63))
+    assert caught.value.field == "observation_id"
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=_observation(observation_id=1))
+    assert caught.value.field == "observation_id"
+
+
+def test_a_missing_or_empty_produced_at_is_refused() -> None:
+    missing = _observation()
+    del missing["produced_at"]
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=missing)
+    assert caught.value.field == "produced_at"
+    with pytest.raises(FrameInputError) as caught:
+        _build(observation=_observation(produced_at=""))
+    assert caught.value.field == "produced_at"
+
+
+def test_a_seq_outside_the_accepted_integers_is_refused() -> None:
+    for seq in ("4", -1, 2**53 - 1):
+        with pytest.raises(FrameInputError) as caught:
+            _build(observation=_observation(seq=seq))
+        assert caught.value.field == "seq"

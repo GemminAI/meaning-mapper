@@ -6,8 +6,8 @@ from __future__ import annotations
 import math
 
 import pytest
-from tests.factories import make_hext_observation
 
+from factories import make_hext_observation
 from meaning_mapper.errors import QuarantineReason, QuarantineStage
 from meaning_mapper.measurement.meaning_measurement import MeaningMeasurement
 from meaning_mapper.pipeline import map_observation
