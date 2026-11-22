@@ -20,6 +20,10 @@ neighbor owns it.
 - Semantic Projection (placing raw features in the local frame to get `theta`)
 - Topological Consistency Check
 - Generating a MeaningMeasurement
+- Carrying a HEXT Observation's *declared* temporal context (`semantic.metadata.time_frame`)
+  onto the MeaningMeasurement unchanged, as a separate field that is never measured
+- A stateless, opt-in, time-aware Non-Discontinuity Guard (the caller passes the previous
+  timestamp; nothing is remembered)
 
 **Must not**
 
@@ -39,6 +43,8 @@ neighbor owns it.
 - Call an LLM
 - Generate prompts
 - Render language
+- Extract, normalize or interpret time expressions in text, or decide which role a time plays
+  (subject / observation / historical) -- that is annotation, upstream of this repository
 
 Meaning Mapper is a measurement instrument: it produces one
 position-plus-uncertainty reading (`theta`, `sigma`) per observation and
@@ -124,3 +130,10 @@ field-for-field structurally identical to `msr.abi.MeaningMeasurement` and
 but is Meaning Mapper's own type. This mirrors RFC-MSR01 Section 4: "any
 object satisfying a port's shape MAY be bound" — the contract is a shape, not
 a shared dependency, and the same convention applies at the MSR/CLE boundary.
+The envelope builder (`meaning_mapper.envelope`) assembles an
+`nvs.meaning-measurement` envelope and an `nvs.meaning-frame` envelope.
+Meaning Mapper is the producer of the frame artifact. It does not compute the measurement.
+It uses the `seal` the caller passes and does not import sensos.
+When a token axis is given, the caller also passes that observation.
+Window measurement (`meaning_mapper.window`) is a separate function. The existing
+measurement functions stay as they are. The frame is an input, and Meaning Mapper stays stateless.

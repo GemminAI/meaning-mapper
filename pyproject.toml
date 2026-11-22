@@ -36,6 +36,8 @@ dev = [
     "pytest-cov>=5.0.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+    # The envelope tests validate the vendored Draft 2020-12 schemas.
+    "jsonschema>=4.18",
 ]
 
 [project.urls]
